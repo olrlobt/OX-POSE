@@ -37,6 +37,10 @@ public class PoseService {
         List<PoseVO> poseData;
 
         double timestamp = Double.parseDouble(data.get("timestamp").toString());
+        if(timestamp < 0.5){
+            return 0;
+        }
+
 
         if (data.get("part").equals("user")) {
             poseData = userPoseData;

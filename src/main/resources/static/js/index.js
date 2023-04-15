@@ -77,12 +77,12 @@ async function Analyze(part) {
     video_box.style.display = "block";
     button_box.style.display = "none";
 
-    analyze_video.onloadedmetadata = () => {
+    analyze_video.onloadeddata = () => {
         canvasCtx.canvas.width = analyze_video.width;
         canvasCtx.canvas.height = analyze_video.height;
 
         comparePose.initialize().then(() => {
-            analyze_video.play();
+            analyze_video.pause();
             requestAnalyze(analyze_video, canvasCtx, comparePose);
         });
     };
@@ -98,6 +98,7 @@ async function Analyze(part) {
 
     comparePose.onResults((results) => {
         saveAnalyzeData(results, part, analyze_video.currentTime);
+       // enqueue(results);
         drawSkeleton(results, canvasCtx, grid);
     });
 
@@ -169,18 +170,27 @@ function createVideoElement(video_box, srcURL) {
  * @param poseModel - 포즈 객체
  */
 function requestAnalyze(videoElement, canvasCtx, poseModel) {
-    poseModel.send({image: videoElement});
-//		canvasCtx.drawImage(videoElement, 0, 0, canvasCtx.canvas.width, canvasCtx.canvas.height);
-    if (videoElement.paused) { // 비디오 정지시 분석 정지
+    let videoPre = videoElement.currentTime;
+    videoElement.currentTime += 50 / 1000;
+
+    if (videoPre === videoElement.currentTime) {
+        videoElement.removeEventListener('timeupdate', onTimeUpdate);
         videoElement.remove();
-        fetch("removeVideo", {
-            method : "POST",
-            body : videoElement.src
-        })
+        fetch('removeVideo', {
+            method: 'POST',
+            body: videoElement.src,
+        });
         return;
     }
-    requestAnimationFrame(() =>
-        requestAnalyze(videoElement, canvasCtx, poseModel));
+
+    function onTimeUpdate() {
+        poseModel.send({ image: videoElement });
+        requestAnimationFrame(() =>
+            requestAnalyze(videoElement, canvasCtx, poseModel)
+        );
+    }
+
+    videoElement.addEventListener('timeupdate', onTimeUpdate, { once: true });
 }
 
 
@@ -294,7 +304,7 @@ function saveAnalyzeData(results, part, timestamp) {
             dataType: 'json',
             data: jsonData,
             success: function (data) {
-                user_result.innerHTML = data; // 각도출력 (임시)
+               // user_result.innerHTML = data; // 각도출력 (임시)
             }
         })
     }
