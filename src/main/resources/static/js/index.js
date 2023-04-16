@@ -78,8 +78,10 @@ async function Analyze(part) {
     button_box.style.display = "none";
 
     analyze_video.onloadeddata = () => {
-        canvasCtx.canvas.width = analyze_video.width;
-        canvasCtx.canvas.height = analyze_video.height;
+        canvasCtx.canvas.style.aspectRatio = analyze_video.videoWidth / analyze_video.videoHeight +"";
+        canvasCtx.canvas.width = analyze_video.videoWidth;
+        canvasCtx.canvas.height = analyze_video.videoHeight;
+        canvasCtx.canvas.style.width = "100%";
 
         comparePose.initialize().then(() => {
             analyze_video.pause();
@@ -156,8 +158,6 @@ function createVideoElement(video_box, srcURL) {
     video.setAttribute("controls", "controls");
     video.setAttribute("src", srcURL);
 
-    video.height = 700;
-    video.width = 400;
     video_box.appendChild(video);
     return video;
 }
