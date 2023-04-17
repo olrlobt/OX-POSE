@@ -37,7 +37,7 @@ public class PoseService {
         List<PoseVO> poseData;
 
         double timestamp = Double.parseDouble(data.get("timestamp").toString());
-        if(timestamp < 0.5){
+        if(timestamp < 0.30){
             return 0;
         }
 
@@ -99,7 +99,7 @@ public class PoseService {
         frame++;
 
         log.info("frame : {} , time : {} size = {}", frame, timestamp, poseData.size());
-        return poseVO.getPoseTheta().get(1).getTheta(); // 임시
+        return timestamp*2;
     }
 
 

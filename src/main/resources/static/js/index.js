@@ -60,8 +60,8 @@ async function Analyze(part) {
     const landmarkContainer =
         document.getElementsByClassName(part + '_landmark_grid_container')[0];
     const grid = new CustomLandmarkGrid(landmarkContainer, gridOption);
-
-
+    const loading = document.getElementsByClassName(part +'_loading')[0];
+    const loading_background = document.getElementsByClassName(part +'_loading_background')[0];
     await fetch("preparePoseAnalyze", {
         method: "POST",
         headers: {
@@ -73,7 +73,6 @@ async function Analyze(part) {
     show_video.pause();
     const analyze_video = createVideoElement(video_box, await setPlaybackRate(input_video));
     analyze_video.style.display = "none";
-
     video_box.style.display = "block";
     button_box.style.display = "none";
 
@@ -82,10 +81,11 @@ async function Analyze(part) {
         canvasCtx.canvas.width = analyze_video.videoWidth;
         canvasCtx.canvas.height = analyze_video.videoHeight;
         canvasCtx.canvas.style.width = "100%";
-
+        loading.classList.add('show-modal');
+        loading_background.classList.add('show-modal');
         comparePose.initialize().then(() => {
             analyze_video.pause();
-            requestAnalyze(analyze_video, canvasCtx, comparePose);
+            requestAnalyze(analyze_video, canvasCtx, comparePose, loading,loading_background);
         });
     };
     show_video.addEventListener('play', () =>
@@ -99,7 +99,7 @@ async function Analyze(part) {
     );
 
     comparePose.onResults((results) => {
-        saveAnalyzeData(results, part, analyze_video.currentTime);
+        saveAnalyzeData(results, part, analyze_video);
        // enqueue(results);
         drawSkeleton(results, canvasCtx, grid);
     });
@@ -169,13 +169,16 @@ function createVideoElement(video_box, srcURL) {
  * @param canvasCtx - 결과가 그려질 canvas
  * @param poseModel - 포즈 객체
  */
-function requestAnalyze(videoElement, canvasCtx, poseModel) {
+function requestAnalyze(videoElement, canvasCtx, poseModel, loading, loading_background) {
     let videoPre = videoElement.currentTime;
     videoElement.currentTime += 50 / 1000;
 
     if (videoPre === videoElement.currentTime) {
         videoElement.removeEventListener('timeupdate', onTimeUpdate);
         videoElement.remove();
+        loading.classList.remove('show-modal');
+        loading_background.classList.remove('show-modal');
+
         fetch('removeVideo', {
             method: 'POST',
             body: videoElement.src,
@@ -186,7 +189,7 @@ function requestAnalyze(videoElement, canvasCtx, poseModel) {
     function onTimeUpdate() {
         poseModel.send({ image: videoElement });
         requestAnimationFrame(() =>
-            requestAnalyze(videoElement, canvasCtx, poseModel)
+            requestAnalyze(videoElement, canvasCtx, poseModel, loading, loading_background)
         );
     }
 
@@ -288,7 +291,9 @@ function drawSkeleton(results, canvasCtx, grid) {
  * @param results
  * @param timestamp
  */
-function saveAnalyzeData(results, part, timestamp) {
+function saveAnalyzeData(results, part, video) {
+    const timestamp = video.currentTime;
+    const totalTime = video.duration * 2;
     if (results.poseWorldLandmarks) {
         const jsonData = JSON.stringify({
             poseWorldLandmarks: results.poseWorldLandmarks,
@@ -304,7 +309,8 @@ function saveAnalyzeData(results, part, timestamp) {
             dataType: 'json',
             data: jsonData,
             success: function (data) {
-               // user_result.innerHTML = data; // 각도출력 (임시)
+                document.querySelector("." + part + "_loading").querySelector(".progress-bar__bar").style.transform = `translateX(${data/(totalTime) *100}%)`;
+                document.querySelector("." + part + "_loading").querySelector(".progress-bar__bar").style.webkitTransform = `translateX(${data/(totalTime) *100}%)`;
             }
         })
     }
@@ -323,8 +329,6 @@ function deleteVideo(show_video, analyze_video) {
         camera.stop();
     }
 }
-
-
 
 analyze_btn.addEventListener("click", function (){
     console.log("분석 버튼 클릭");

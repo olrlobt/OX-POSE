@@ -32,13 +32,10 @@ html, body {
 	display: block;
 	padding: 5%;
 	height: 50%;
-
-
 }
 .video_analyze_result{
 	padding: 5%;
 	border-top: 6px solid #2b487b;
-
 }
 
 .container {
@@ -77,13 +74,20 @@ html, body {
 }
 
 .video_box {
-	margin: 0 3%;
+	padding: 0 3%;
 	width: 100%;
+	position: relative;
 }
 
 .video {
-	margin: 0 auto;
-	width: 100%;
+	margin: auto;
+	position: absolute;
+	min-height: 100%;
+	max-width: 100%;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	object-fit: contain;
 }
 
 .user_button_box, .compare_button_box {
@@ -98,6 +102,19 @@ html, body {
 .user_video_box, .compare_video_box {
 	display: none;
 	position: relative;
+	height: 100%;
+	align-items: center;
+	justify-content: center;
+}
+
+.compare_canvas ,.user_canvas{
+	position: absolute;
+	width: 100%;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 1;
+	pointer-events: none;
 }
 
 #user_input_video, #compare_input_video {
@@ -144,9 +161,82 @@ html, body {
 
 
 
+/* loading */
+
+.compare_loading, .user_loading {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	display: none;
+	background-color: rgba(0, 0, 0, 0.4);
+}
+.compare_loading_background, .user_loading_background{
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0, 0, 0, 0.5);
+	top: 0;
+	left: 0;
+	z-index: 1;
+	display: none;
+}
+
+.compare_loading.show-modal , .user_loading.show-modal {
+	display: block;
+}
+
+.compare_loading_background.show-modal, .user_loading_background.show-modal {
+	display: block;
+}
+.loading_body {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 100px;
+	height: 40px;
+	padding: 20px;
+	z-index: 2;
+	text-align: center;
+	background-color: rgb(255, 255, 255);
+	border-radius: 10px;
+	box-shadow: 0 2px 3px 0 rgba(34, 36, 38, 0.15);
+	transform: translateX(-50%) translateY(-50%);
+	overflow: hidden;
+}
+
+.progress-bar {
+	background-color: #5f89e6;
+	border-radius: 4px;
+	box-shadow: inset 0 0.5em 0.5em rgba(0,0,0,0.05);
+	height: 5px;
+	margin: 2rem 0 2rem 0;
+	overflow: hidden;
+	position: relative;
+	transform: translateZ(0);
+	width: 100%;
+}
+
+.progress-bar__bar {
+	background-color: #ececec;
+	box-shadow: inset 0 0.5em 0.5em rgba(94, 49, 49, 0.05);
+	bottom: 0;
+	left: 0;
+	position: absolute;
+	right: 0;
+	top: 0;
+}
+
+.progress-bar__bar.active {
+	transition: all 10000ms ease-out;
+	transform: translateX(100%);
+	-webkit-transform: translateX(100%)
+}
 
 
 /* modal */
+
 .modal {
 	position: absolute;
 	top: 0;
@@ -156,6 +246,7 @@ html, body {
 	display: none;
 	background-color: rgba(0, 0, 0, 0.4);
 }
+
 
 .modal.show-modal {
 	display: block;
@@ -274,8 +365,8 @@ label {
 }
 
 [type="checkbox"]:checked {
-	background-color: tomato;
-	border-color: tomato;
+	background-color: #5f89e6;
+	border-color: #5f89e6;
 }
 
 [type="checkbox"]:checked::before {
@@ -338,10 +429,23 @@ label {
 						<button class="modal_btn">샘플 영상 선택</button>
 					</div>
 					<div class="compare_video_box">
-						<!-- 					<video class="video compare_video" src="./video/test4.mp4" controls></video> -->
+						<!-- <video class="video compare_video" src="./video/test4.mp4" controls></video> -->
 						<button class="compare_video_back">뒤로가기</button>
 						<!-- 비교 영상 Video 태그 부분 -->
+						<canvas class="compare_canvas"></canvas>
+
 					</div>
+
+					<%-- 로딩 중 --%>
+					<div class="compare_loading_background"></div>
+					<div class="compare_loading">
+						<div class="loading_body">
+							<div class="progress-bar">
+								<div class="progress-bar__bar"></div>
+							</div>
+						</div>
+					</div>
+
 
 				</div>
 				<div class="video_box user_box">
@@ -354,22 +458,23 @@ label {
 					<div class="user_video_box">
 						<button class="user_video_back">뒤로가기</button>
 						<!-- 사용자 영상 Video 태그 부분 -->
-					</div>
 
+						<canvas class="user_canvas"></canvas>
+
+					</div>
+					<%-- 로딩 중 --%>
+					<div class="user_loading_background"></div>
+					<div class="user_loading">
+						<div class="loading_body">
+							<div class="progress-bar">
+								<div class="progress-bar__bar"></div>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		<%--결과 출력 Canvas--%>
 			<div class="video_analyze_canvas">
-					<div class="canvas_box">
-						<div>
-							<canvas class="compare_canvas"></canvas>
-						</div>
-						<div>
-							<canvas class="user_canvas"></canvas>
-						</div>
-					</div>
-
-
 					<div class="canvas_box">
 
 						<div class='square-box'>
@@ -418,13 +523,8 @@ label {
 			</div>
 			<div class="video_analyze_result">
 				<h3> 결과 </h3>
-
-
 			</div>
-
 		</div>
-
-
 	</section>
 
 
@@ -479,12 +579,12 @@ label {
         document.body.style.overflow = 'auto';
        };
 	  function open(){
-			
   		modal.classList.add('show-modal');
         modal_background.classList.add('show-modal');
         document.body.style.overflow = 'hidden';
        };
-	 
+
+
 	</script>
 </body>
 </html>
