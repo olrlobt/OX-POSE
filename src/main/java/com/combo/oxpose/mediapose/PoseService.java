@@ -19,9 +19,7 @@ public class PoseService {
     private List<PoseVO> userPoseData = new ArrayList<>();
     private List<PoseVO> comparePoseData = new ArrayList<>();
     private PoseVO poseVO;
-
     private int frame = 0;
-
     private final int[][] joints = {{11, 12, 13}, {12, 11, 14}, {13, 11, 15}, {14, 12, 16}, {23, 24, 25},
             {24, 23, 26}, {25, 23, 27}, {26, 24, 28}};
 
@@ -31,75 +29,78 @@ public class PoseService {
      * @param data : 분석 결과
      * @return (임시)
      */
-    public double setAnalyzePose(Map<String, Object> data) {
-        List<Map<String, Double>> poseWorldLandmarksData = (List<Map<String, Double>>) data.get("poseWorldLandmarks");
-        List<Map<String, Double>> poseLandmarksData = (List<Map<String, Double>>) data.get("poseLandmarks");
-        List<PoseVO> poseData;
+    public List<PoseVO> setAnalyzePose(Map<String, Object> data) {
 
-        double timestamp = Double.parseDouble(data.get("timestamp").toString());
-        if(timestamp < 0.30){
-            return 0;
+        String part = (String) data.get("part");
+        List<Map<String, Object>> poseList = (List<Map<String, Object>>) data.get("data");
+        log.info("size = {}", poseList.size());
+
+        List<PoseVO> poseData = new ArrayList<>();
+        for (Map<String, Object> pose : poseList) {
+            List<Map<String, Double>> poseWorldLandmarksData = (List<Map<String, Double>>) pose.get(
+                    "poseWorldLandmarks");
+            List<Map<String, Double>> poseLandmarksData = (List<Map<String, Double>>) pose.get("poseLandmarks");
+            double timestamp = Double.parseDouble(pose.get("timestamp").toString());
+
+            if (timestamp < 0.0) {
+                log.info("time return");
+                continue;
+            }
+
+            if (part.equals("user")) {
+                poseData = userPoseData;
+            } else {
+                poseData = comparePoseData;
+            }
+            poseVO = new PoseVO();
+
+            poseVO.setFrame(frame * 3);
+            poseVO.setTime(timestamp * 2);
+
+            ArrayList<PoseKeyPoint> poseLandmarks = new ArrayList<>();
+
+            for (int keyPoint = 0; keyPoint < poseLandmarksData.size(); keyPoint++) {
+
+                PoseVO.PoseKeyPoint poseKeyPoint = poseVO.new PoseKeyPoint();
+                poseKeyPoint.setX(poseLandmarksData.get(keyPoint).get("x"));
+                poseKeyPoint.setY(poseLandmarksData.get(keyPoint).get("y"));
+                poseKeyPoint.setZ(poseLandmarksData.get(keyPoint).get("z"));
+                poseKeyPoint.setVisibility(poseLandmarksData.get(keyPoint).get("visibility"));
+
+                poseLandmarks.add(poseKeyPoint);
+            }
+            poseVO.setPoseLandmarks(poseLandmarks);
+            normalizeData(poseWorldLandmarksData);
+
+            ArrayList<PoseKeyPoint> poseKeyPoints = new ArrayList<>();
+            for (int keyPoint = 0; keyPoint < poseWorldLandmarksData.size(); keyPoint++) {
+
+                PoseVO.PoseKeyPoint poseKeyPoint = poseVO.new PoseKeyPoint();
+                poseKeyPoint.setX(poseWorldLandmarksData.get(keyPoint).get("x"));
+                poseKeyPoint.setY(poseWorldLandmarksData.get(keyPoint).get("y"));
+                poseKeyPoint.setZ(poseWorldLandmarksData.get(keyPoint).get("z"));
+                poseKeyPoint.setVisibility(poseWorldLandmarksData.get(keyPoint).get("visibility"));
+
+                poseKeyPoints.add(poseKeyPoint);
+            }
+            poseVO.setPoseWorldLandmarks(poseKeyPoints);
+
+            ArrayList<PoseTheta> poseThetas = new ArrayList<>();
+            for (int[] joint : joints) {
+                PoseVO.PoseTheta poseTheta = poseVO.new PoseTheta();
+
+                poseTheta.setKeyPoint(joint[0]);
+                poseTheta.setTheta(getTheta(joint[0], joint[1], joint[2]));
+                poseThetas.add(poseTheta);
+            }
+            poseVO.setPoseTheta(poseThetas);
+            addMidAnalyze(poseData);
+            poseData.add(poseVO);
+
+            frame++;
+            log.info("frame : {} , time : {} size = {}", frame, timestamp, poseData.size());
         }
-
-
-        if (data.get("part").equals("user")) {
-            poseData = userPoseData;
-        } else {
-            poseData = comparePoseData;
-        }
-
-        poseVO = new PoseVO();
-
-        poseVO.setFrame(frame * 3);
-        poseVO.setTime(timestamp * 2);
-
-        ArrayList<PoseKeyPoint> poseLandmarks = new ArrayList<>();
-
-        for (int keyPoint = 0; keyPoint < poseLandmarksData.size(); keyPoint++) {
-
-            PoseVO.PoseKeyPoint poseKeyPoint = poseVO.new PoseKeyPoint();
-            poseKeyPoint.setX(poseLandmarksData.get(keyPoint).get("x"));
-            poseKeyPoint.setY(poseLandmarksData.get(keyPoint).get("y"));
-            poseKeyPoint.setZ(poseLandmarksData.get(keyPoint).get("z"));
-            poseKeyPoint.setVisibility(poseLandmarksData.get(keyPoint).get("visibility"));
-
-            poseLandmarks.add(poseKeyPoint);
-        }
-        poseVO.setPoseLandmarks(poseLandmarks);
-
-        normalizeData(poseWorldLandmarksData);
-
-        ArrayList<PoseKeyPoint> poseKeyPoints = new ArrayList<>();
-        for (int keyPoint = 0; keyPoint < poseWorldLandmarksData.size(); keyPoint++) {
-
-            PoseVO.PoseKeyPoint poseKeyPoint = poseVO.new PoseKeyPoint();
-            poseKeyPoint.setX(poseWorldLandmarksData.get(keyPoint).get("x"));
-            poseKeyPoint.setY(poseWorldLandmarksData.get(keyPoint).get("y"));
-            poseKeyPoint.setZ(poseWorldLandmarksData.get(keyPoint).get("z"));
-            poseKeyPoint.setVisibility(poseWorldLandmarksData.get(keyPoint).get("visibility"));
-
-            poseKeyPoints.add(poseKeyPoint);
-        }
-
-        poseVO.setPoseWorldLandmarks(poseKeyPoints);
-
-        ArrayList<PoseTheta> poseThetas = new ArrayList<>();
-        for (int[] joint : joints) {
-            PoseVO.PoseTheta poseTheta = poseVO.new PoseTheta();
-
-            poseTheta.setKeyPoint(joint[0]);
-            poseTheta.setTheta(getTheta(joint[0], joint[1], joint[2]));
-            poseThetas.add(poseTheta);
-        }
-        poseVO.setPoseTheta(poseThetas);
-
-        addMidAnalyze(poseData);
-        poseData.add(poseVO);
-
-        frame++;
-
-        log.info("frame : {} , time : {} size = {}", frame, timestamp, poseData.size());
-        return timestamp*2;
+        return poseData;
     }
 
 
@@ -529,67 +530,5 @@ public class PoseService {
         log.info("max = {}  i = {}   j = {} " , max, maxI, maxJ);
         log.info("start userFrame = {}   start compareFrame = {} " ,  maxI - max, maxJ - max);
     }
-
-
-
-
-
-
-
-
-
-
-
-    /**
-     * JS 상에서 resource/static/video 의 파일 갯수를 가져다 주는 함수 현재는 DB연결 전에 사용하려고 작성하였지만, 더는 사용하지 않는다.
-     */
-    public ArrayList<String> getFileNum() {
-        try {
-            String path = "src/main/resources/static/video/";// System.getProperty("user.dir");
-
-            return showFileList(path);
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-
-        return null;
-    }
-
-    public ArrayList<String> showFileList(String path) throws Exception {
-        File dir = new File(path);
-        File[] files = dir.listFiles();
-
-        ArrayList<String> fileNames = new ArrayList<>();
-
-        int fileCnt = 0;
-        int dirCnt = 0;
-        log.info("files :  " + files);
-        for (int i = 0; i < files.length; i++) {
-            File file = files[i];
-            fileNames.add(file.getName());
-
-            log.info("file :  " + file);
-            if (file.isFile()) {
-                fileCnt++;// 파일 개수
-                // System.out.println("[File]" + file.getCanonicalPath().toString());
-                // System.out.println("[Directory CNT]" + file.getCanonicalPath().toString()+" "
-                // +fileCnt);
-
-            } else if (file.isDirectory()) {
-                dirCnt++;
-                // System.out.println("[Directory]" + file.getCanonicalPath().toString());
-                try {
-                    showFileList(file.getCanonicalPath().toString());
-                } catch (Exception e) {
-                }
-            }
-        }
-//		log.info("route :  " + dir.getCanonicalPath().toString());
-//		log.info("file :  " + fileCnt);
-//		log.info("dirCnt :  " + dirCnt);
-        return fileNames;
-    }
-
 
 }

@@ -7,8 +7,6 @@ const compare_input_video = document.getElementById("compare_input_video");
 const analyze_btn = document.getElementById("analyze_btn");
 const analyzeAll_btn = document.getElementById("analyzeAll_btn");
 
-const user_result = document.querySelector(".user_result");
-
 // keyPoint 구분
 const leftIndices = [1, 2, 3, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31];
 const rightIndices = [4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32];
@@ -26,6 +24,10 @@ const centerConnections = [
 
 let camera;
 
+let compareResult = [];
+let userResult = [];
+
+
 // 비디오 크기를 조절하는 함수
 video_ratio.addEventListener("change", function () {
     const video = document.getElementsByClassName("video");
@@ -35,21 +37,25 @@ video_ratio.addEventListener("change", function () {
     }
 });
 
-
 // 영상 선택 버튼 이벤트
-compare_video_btn.addEventListener("click", () => compare_input_video.click());
-user_video_btn.addEventListener("click", () => user_input_video.click());
+compare_video_btn.addEventListener("click", () => {
+    comparePose.send({images:null});
+    compare_input_video.click();
+});
+user_video_btn.addEventListener("click", () => {
+    userPose.send({images:null});
+    user_input_video.click();
+});
 
 // 파일 입력 이벤트
-user_input_video.addEventListener("change", () => Analyze("user"));
-compare_input_video.addEventListener("change", () => Analyze("compare"));
-
+user_input_video.addEventListener("change", () =>  Analyze("user",userPose));
+compare_input_video.addEventListener("change", () => Analyze("compare",comparePose));
 
 /**
  * 비디오 분석 함수
  * @param {string} part - user or compare
  */
-async function Analyze(part) {
+async function Analyze(part, poseModel) {
     const input_video = document.getElementById(part + "_input_video");
     const video_box = document.getElementsByClassName(part + '_video_box')[0];
     const button_box = document.getElementsByClassName(part + '_button_box')[0];
@@ -59,9 +65,12 @@ async function Analyze(part) {
     const video_back = document.getElementsByClassName(part + '_video_back')[0];
     const landmarkContainer =
         document.getElementsByClassName(part + '_landmark_grid_container')[0];
-    const grid = new CustomLandmarkGrid(landmarkContainer, gridOption);
+    const grid = new LandmarkGrid(landmarkContainer, gridOption);
     const loading = document.getElementsByClassName(part +'_loading')[0];
     const loading_background = document.getElementsByClassName(part +'_loading_background')[0];
+    const analyze_data = [];
+
+
     await fetch("preparePoseAnalyze", {
         method: "POST",
         headers: {
@@ -83,25 +92,39 @@ async function Analyze(part) {
         canvasCtx.canvas.style.width = "100%";
         loading.classList.add('show-modal');
         loading_background.classList.add('show-modal');
-        comparePose.initialize().then(() => {
+        poseModel.initialize().then(() => {
             analyze_video.pause();
-            requestAnalyze(analyze_video, canvasCtx, comparePose, loading,loading_background);
+            requestAnalyze(analyze_video, canvasCtx, poseModel, loading,loading_background);
         });
     };
-    show_video.addEventListener('play', () =>
-        setInterval(() => {
-            getTimeStampAnalyze(canvasCtx, show_video.currentTime, grid , part);
-        }, 100)
+    show_video.addEventListener('play', () =>{
+            const intervalID = setInterval(() => {
+                getTimeStampAnalyze(canvasCtx, show_video.currentTime, grid , part);
+            }, 100);
+
+            show_video.addEventListener('pause' ,function () {
+                clearInterval(intervalID);
+            },{once : true});
+      }
     );
 
     show_video.addEventListener('seeking', () =>
         getTimeStampAnalyze(canvasCtx, show_video.currentTime, grid, part)
     );
 
-    comparePose.onResults((results) => {
-        saveAnalyzeData(results, part, analyze_video);
-       // enqueue(results);
-        drawSkeleton(results, canvasCtx, grid);
+    poseModel.onResults((results) => {
+        //saveAnalyzeData(results, part, analyze_video);
+        //drawSkeleton(results, canvasCtx, grid);
+
+        const jsonData = {
+            poseLandmarks : results.poseLandmarks,
+            poseWorldLandmarks : results.poseWorldLandmarks,
+            timestamp: analyze_video.currentTime - 0.1,
+            // part: part,
+        };
+        analyze_data.push(jsonData);
+        document.querySelector("." + part + "_loading").querySelector(".progress-bar__bar").style.transform = `translateX(${analyze_video.currentTime/(analyze_video.duration) *100}%)`;
+        document.querySelector("." + part + "_loading").querySelector(".progress-bar__bar").style.webkitTransform = `translateX(${analyze_video.currentTime/(analyze_video.duration) *100}%)`;
     });
 
 
@@ -110,10 +133,76 @@ async function Analyze(part) {
 
         video_box.style.display = "none";
         button_box.style.display = "flex";
-
         landmarkContainer.querySelector('div').remove();
     });
 
+
+    /**
+     * 분석을 반복적으로 요청하는 함수
+     * @param videoElement - 분석 영상
+     * @param canvasCtx - 결과가 그려질 canvas
+     * @param poseModel - 포즈 객체
+     * @param loading - loading Element
+     * @param loading_background -  loading_background Element
+     */
+    function requestAnalyze(videoElement, canvasCtx, poseModel, loading, loading_background) {
+        let videoPre = videoElement.currentTime;
+        videoElement.currentTime += 50 / 1000;
+
+        if (videoPre === videoElement.currentTime) {
+            videoElement.removeEventListener('timeupdate', onTimeUpdate);
+            videoElement.remove();
+            loading.classList.remove('show-modal');
+            loading_background.classList.remove('show-modal');
+
+            saveAnalyzeData(part, analyze_video);
+
+            fetch('removeVideo', {
+                method: 'POST',
+                body: videoElement.src,
+            });
+            return;
+        }
+
+        function onTimeUpdate() {
+            poseModel.send({ image: videoElement });
+            requestAnimationFrame(() =>
+                requestAnalyze(videoElement, canvasCtx, poseModel, loading, loading_background)
+            );
+        }
+
+        videoElement.addEventListener('timeupdate', onTimeUpdate, { once: true });
+    }
+
+    /**
+     * 분석 결과를 저장하는 함수
+     * @param analyze_data
+     * @param part
+     * @param video
+     */
+    function saveAnalyzeData(part, video) {
+
+        const jsonData = JSON.stringify({
+            data : analyze_data,
+            part : part,
+        });
+        $.ajax({
+            type: 'POST',
+            url: 'setAnalyzePose',
+            contentType: 'application/json',
+            processData: false,
+            dataType: 'json',
+            data: jsonData,
+            success: function (data) {
+                if(part == "user"){
+                    userResult = data;
+                }else{
+                    compareResult = data;
+                }
+                console.log(data);
+            }
+        })
+    }
 }
 
 /**
@@ -164,44 +253,11 @@ function createVideoElement(video_box, srcURL) {
 
 
 /**
- * 분석을 반복적으로 요청하는 함수
- * @param videoElement - 분석 영상
- * @param canvasCtx - 결과가 그려질 canvas
- * @param poseModel - 포즈 객체
- */
-function requestAnalyze(videoElement, canvasCtx, poseModel, loading, loading_background) {
-    let videoPre = videoElement.currentTime;
-    videoElement.currentTime += 50 / 1000;
-
-    if (videoPre === videoElement.currentTime) {
-        videoElement.removeEventListener('timeupdate', onTimeUpdate);
-        videoElement.remove();
-        loading.classList.remove('show-modal');
-        loading_background.classList.remove('show-modal');
-
-        fetch('removeVideo', {
-            method: 'POST',
-            body: videoElement.src,
-        });
-        return;
-    }
-
-    function onTimeUpdate() {
-        poseModel.send({ image: videoElement });
-        requestAnimationFrame(() =>
-            requestAnalyze(videoElement, canvasCtx, poseModel, loading, loading_background)
-        );
-    }
-
-    videoElement.addEventListener('timeupdate', onTimeUpdate, { once: true });
-}
-
-
-/**
  *  timeStamp에 가장 가까운 분석 결과를 출력해주는 함수
  * @param canvasCtx
  * @param timeStamp
  * @param grid
+ * @param part
  */
 function getTimeStampAnalyze(canvasCtx, timeStamp, grid, part) {
 
@@ -286,35 +342,7 @@ function drawSkeleton(results, canvasCtx, grid) {
 }
 
 
-/**
- * 분석 결과를 저장하는 함수
- * @param results
- * @param timestamp
- */
-function saveAnalyzeData(results, part, video) {
-    const timestamp = video.currentTime;
-    const totalTime = video.duration * 2;
-    if (results.poseWorldLandmarks) {
-        const jsonData = JSON.stringify({
-            poseWorldLandmarks: results.poseWorldLandmarks,
-            poseLandmarks: results.poseLandmarks,
-            timestamp: timestamp,
-            part: part,
-        });
-        $.ajax({
-            type: 'POST',
-            url: 'setAnalyzePose',
-            contentType: 'application/json',
-            processData: false,
-            dataType: 'json',
-            data: jsonData,
-            success: function (data) {
-                document.querySelector("." + part + "_loading").querySelector(".progress-bar__bar").style.transform = `translateX(${data/(totalTime) *100}%)`;
-                document.querySelector("." + part + "_loading").querySelector(".progress-bar__bar").style.webkitTransform = `translateX(${data/(totalTime) *100}%)`;
-            }
-        })
-    }
-}
+
 
 /**
  * 뒤로가기를 눌렀을때 비디오를 삭제하는 함수
@@ -366,6 +394,11 @@ analyzeAll_btn.addEventListener("click", function (){
 
 
 
+
+
+
+
+
 // User live 버튼 클릭 이벤트
 // user_live_button.addEventListener("click", function() {
 // 	pose.reset();
@@ -392,7 +425,7 @@ analyzeAll_btn.addEventListener("click", function (){
 
 // 포즈 세팅
 
-const pose = new Pose({
+const userPose = new Pose({
     locateFile: (file) => {
         return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
     }
@@ -414,9 +447,8 @@ const poseOptions = {
     maxNumDetection: 3
 };
 
-pose.setOptions(poseOptions);
+userPose.setOptions(poseOptions);
 comparePose.setOptions(poseOptions);
-
 
 const gridOption = {
     connectionColor: 0xCCCCCC,
@@ -433,23 +465,7 @@ const gridOption = {
     numCellsPerAxis: 2,
     showHidden: false,
     centered: true,
-}
-
-
-class CustomLandmarkGrid extends LandmarkGrid {
-    constructor(container, config) {
-        super(container, config);
-    }
-
-    // createScene() {
-    //   super.createScene();
-    // }
-
-    render() {
-        this.config.isRotating = false; // 회전을 완전히 비활성화하려면
-        // this.config.rotationSpeed = 1;  // 회전 속도를 조절하려면 [0,1]
-
-        super.render();
-    }
+    isRotating : false,
+    rotationSpeed : 0.5,
 }
 

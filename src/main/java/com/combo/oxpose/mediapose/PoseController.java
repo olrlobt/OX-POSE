@@ -1,20 +1,17 @@
 package com.combo.oxpose.mediapose;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.ModelAndView;
 
 import com.combo.oxpose.ffmpeg.VideoFileUtils;
 
@@ -30,15 +27,8 @@ public class PoseController {
 	private PoseService poseService;
 
 	@GetMapping("/")
-	public ModelAndView Home() {
-
-		ModelAndView mv = new ModelAndView();
-		ArrayList<String> fileNames = poseService.getFileNum();
-
-		mv.addObject("fileNames", fileNames);
-		mv.setViewName("index");
-
-		return mv;
+	public String Home() {
+		return "index";
 	}
 
 	@GetMapping("/live")
@@ -63,7 +53,8 @@ public class PoseController {
 
 	@ResponseBody
 	@PostMapping("/setAnalyzePose")
-	public double setAnalyzePose(@RequestBody Map<String, Object> data) {
+	public List<PoseVO> setAnalyzePose(@RequestBody Map<String,Object> data) {
+
 		return poseService.setAnalyzePose(data);
 	}
 	
