@@ -8,7 +8,7 @@ import lombok.Data;
 public class PoseVO {
 	
 	private Integer frame;
-	private double time;
+	private double timeStamp;
 	private ArrayList<PoseKeyPoint> poseLandmarks;
 	private ArrayList<PoseKeyPoint> poseWorldLandmarks; // 33개
 	private ArrayList<PoseTheta> poseTheta; // 12개

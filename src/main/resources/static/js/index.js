@@ -71,14 +71,6 @@ async function Analyze(part, poseModel) {
     const analyze_data = [];
 
 
-    await fetch("preparePoseAnalyze", {
-        method: "POST",
-        headers: {
-            'Content-Type': 'text/plain'
-        },
-        body: part,
-    });
-
     show_video.pause();
     const analyze_video = createVideoElement(video_box, await setPlaybackRate(input_video));
     analyze_video.style.display = "none";
@@ -99,7 +91,7 @@ async function Analyze(part, poseModel) {
     };
     show_video.addEventListener('play', () =>{
             const intervalID = setInterval(() => {
-                getTimeStampAnalyze(canvasCtx, show_video.currentTime, grid , part);
+                drawSkeleton(getTimeStampAnalyze(show_video.currentTime, part), canvasCtx, grid);
             }, 100);
 
             show_video.addEventListener('pause' ,function () {
@@ -109,7 +101,7 @@ async function Analyze(part, poseModel) {
     );
 
     show_video.addEventListener('seeking', () =>
-        getTimeStampAnalyze(canvasCtx, show_video.currentTime, grid, part)
+         drawSkeleton(getTimeStampAnalyze(show_video.currentTime, part), canvasCtx, grid)
     );
 
     poseModel.onResults((results) => {
@@ -251,40 +243,6 @@ function createVideoElement(video_box, srcURL) {
     return video;
 }
 
-
-/**
- *  timeStamp에 가장 가까운 분석 결과를 출력해주는 함수
- * @param canvasCtx
- * @param timeStamp
- * @param grid
- * @param part
- */
-function getTimeStampAnalyze(canvasCtx, timeStamp, grid, part) {
-
-    if (timeStamp === 0) {
-        return;
-    }
-    const data = {
-        timeStamp: timeStamp,
-        part : part,
-    }
-    const options = {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(data)
-    };
-    fetch("getTimeStampAnalyze", options)
-        .then(response => response.json())
-        .then(data => {
-            drawSkeleton(data, canvasCtx, grid);
-        })
-        .catch(error => console.error(error));
-
-}
-
-
 /**
  * 스켈레톤을 그려주는 함수
  * @param results - 분석 결과
@@ -342,8 +300,6 @@ function drawSkeleton(results, canvasCtx, grid) {
 }
 
 
-
-
 /**
  * 뒤로가기를 눌렀을때 비디오를 삭제하는 함수
  * @param show_video
@@ -388,9 +344,46 @@ analyzeAll_btn.addEventListener("click", function (){
 })
 
 
+/**
+ * 주어진 timeStamp와 가장 가까운 Pose 결과를 return 하는 함수
+ * @param timeStamp
+ * @param part
+ */
+function getTimeStampAnalyze(timeStamp, part){
+    let result = [];
 
+    if(part === "user"){
+        result = userResult;
+    }else{
+        result = compareResult;
+    }
 
+    let low = 0;
+    let high = result.length-1;
 
+    let closest = result[0].timeStamp;
+
+    while (low <= high) {
+        let mid = Math.floor((low + high) / 2);
+
+        if (timeStamp == result[mid].timeStamp) {
+            closest = result[mid].timeStamp;
+            break;
+        }
+
+        if (timeStamp < result[mid].timeStamp) {
+            high = mid - 1;
+        } else {
+            low = mid + 1;
+        }
+
+        if (Math.abs(result[mid].timeStamp - timeStamp) < Math.abs(closest - timeStamp)) {
+            closest = result[mid].timeStamp;
+        }
+    }
+
+    return result[low];
+}
 
 
 

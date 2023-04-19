@@ -19,7 +19,7 @@ public class PoseService {
     private List<PoseVO> userPoseData = new ArrayList<>();
     private List<PoseVO> comparePoseData = new ArrayList<>();
     private PoseVO poseVO;
-    private int frame = 0;
+
     private final int[][] joints = {{11, 12, 13}, {12, 11, 14}, {13, 11, 15}, {14, 12, 16}, {23, 24, 25},
             {24, 23, 26}, {25, 23, 27}, {26, 24, 28}};
 
@@ -30,7 +30,7 @@ public class PoseService {
      * @return (임시)
      */
     public List<PoseVO> setAnalyzePose(Map<String, Object> data) {
-
+        int frame = 0;
         String part = (String) data.get("part");
         List<Map<String, Object>> poseList = (List<Map<String, Object>>) data.get("data");
         log.info("size = {}", poseList.size());
@@ -55,7 +55,7 @@ public class PoseService {
             poseVO = new PoseVO();
 
             poseVO.setFrame(frame * 3);
-            poseVO.setTime(timestamp * 2);
+            poseVO.setTimeStamp(timestamp * 2);
 
             ArrayList<PoseKeyPoint> poseLandmarks = new ArrayList<>();
 
@@ -94,7 +94,7 @@ public class PoseService {
                 poseThetas.add(poseTheta);
             }
             poseVO.setPoseTheta(poseThetas);
-            addMidAnalyze(poseData);
+            addMidAnalyze(poseData, frame);
             poseData.add(poseVO);
 
             frame++;
@@ -107,7 +107,7 @@ public class PoseService {
     /**
      * 부족한 프레임을 보충하는 함수
      */
-    public void addMidAnalyze(List<PoseVO> poseData) {
+    public void addMidAnalyze(List<PoseVO> poseData ,int frame) {
 
         if (!poseData.isEmpty()) {
             PoseVO previousPoseVO = poseData.get(poseData.size() - 1);
@@ -116,7 +116,7 @@ public class PoseService {
                 PoseVO midPoseVO = new PoseVO();
                 midPoseVO.setFrame(frame * 3 - (3 - count));
 
-                midPoseVO.setTime(previousPoseVO.getTime() + (poseVO.getTime() - previousPoseVO.getTime()) * count / 3);
+                midPoseVO.setTimeStamp(previousPoseVO.getTimeStamp() + (poseVO.getTimeStamp() - previousPoseVO.getTimeStamp()) * count / 3);
 
                 ArrayList<PoseKeyPoint> poseLandmarks = poseVO.getPoseLandmarks();
                 ArrayList<PoseKeyPoint> previousPoseLandmarks = previousPoseVO.getPoseLandmarks();
@@ -344,24 +344,24 @@ public class PoseService {
         int low = 0;
         int high = poseData.size() - 1;
         int mid = 0;
-        double closest = poseData.get(0).getTime();
+        double closest = poseData.get(0).getTimeStamp();
 
         while (low <= high) {
             mid = (low + high) / 2;
 
-            if (timeStamp == poseData.get(mid).getTime()) {
-                closest = poseData.get(mid).getTime();
+            if (timeStamp == poseData.get(mid).getTimeStamp()) {
+                closest = poseData.get(mid).getTimeStamp();
                 break;
             }
 
-            if (timeStamp < poseData.get(mid).getTime()) {
+            if (timeStamp < poseData.get(mid).getTimeStamp()) {
                 high = mid - 1;
             } else {
                 low = mid + 1;
             }
 
-            if (Math.abs(poseData.get(mid).getTime() - timeStamp) < Math.abs(closest - timeStamp)) {
-                closest = poseData.get(mid).getTime();
+            if (Math.abs(poseData.get(mid).getTimeStamp() - timeStamp) < Math.abs(closest - timeStamp)) {
+                closest = poseData.get(mid).getTimeStamp();
             }
         }
         log.info("timeStamp = {} closest = {} mid = {}", timeStamp, closest, mid);
@@ -372,44 +372,30 @@ public class PoseService {
         int low = 0;
         int high = poseData.size() - 1;
         int mid = 0;
-        double closest = poseData.get(0).getTime();
+        double closest = poseData.get(0).getTimeStamp();
 
         while (low <= high) {
             mid = (low + high) / 2;
 
-            if (timeStamp == poseData.get(mid).getTime()) {
-                closest = poseData.get(mid).getTime();
+            if (timeStamp == poseData.get(mid).getTimeStamp()) {
+                closest = poseData.get(mid).getTimeStamp();
                 break;
             }
 
-            if (timeStamp < poseData.get(mid).getTime()) {
+            if (timeStamp < poseData.get(mid).getTimeStamp()) {
                 high = mid - 1;
             } else {
                 low = mid + 1;
             }
 
-            if (Math.abs(poseData.get(mid).getTime() - timeStamp) < Math.abs(closest - timeStamp)) {
-                closest = poseData.get(mid).getTime();
+            if (Math.abs(poseData.get(mid).getTimeStamp() - timeStamp) < Math.abs(closest - timeStamp)) {
+                closest = poseData.get(mid).getTimeStamp();
             }
         }
         log.info("timeStamp = {} closest = {} mid = {}", timeStamp, closest, mid);
         return poseData.get(mid);
     }
 
-
-
-    /**
-     * 분석이 시작될때, 객체를 초기화하는 함수
-     */
-    public void preparePoseAnalyze(String part) {
-
-        if (part.equals("user")) {
-            userPoseData = new ArrayList<>();
-        } else {
-            comparePoseData = new ArrayList<>();
-        }
-        frame = 0;
-    }
 
     /**
      * 분석이 끝난 비디오를 제거하는 함수
