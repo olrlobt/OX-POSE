@@ -74,15 +74,15 @@ public class PoseController {
 
 	@ResponseBody
 	@PostMapping("/matchCurrentPose")
-	public void matchCurrentPose(@RequestBody Map<String, Double> data){
+	public void matchCurrentPose(@RequestBody List<PoseVO> poseVOs){
 
-		log.info("data = {}" , data);
-		poseService.matchCurrentPose(data);
+		poseService.matchCurrentPose(poseVOs);
 	}
 
 	@ResponseBody
 	@PostMapping("/matchAllPose")
-	public void matchAllPose(){
-		poseService.matchAllPose();
+	public void matchAllPose(@RequestBody List<List<PoseVO>> poseVOs){
+
+		poseService.matchAllPose(poseVOs);
 	}
 }

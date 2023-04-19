@@ -15,7 +15,7 @@ public class PoseVO {
 	
 	
 	@Data
-	public class PoseKeyPoint{
+	public static class PoseKeyPoint{
 		private double x;
 		private double y;
 		private double z;
@@ -23,7 +23,7 @@ public class PoseVO {
 	}
 	
 	@Data
-	public class PoseTheta{
+	public static class PoseTheta{
 		private Integer keyPoint;
 		private double theta;
 	}

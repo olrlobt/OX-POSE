@@ -319,27 +319,34 @@ analyze_btn.addEventListener("click", function (){
     const compareVideo = document.getElementsByClassName('compare_video_box')[0].querySelector('video');
     const userVideo = document.getElementsByClassName('user_video_box')[0].querySelector('video');
 
-    const jsonData = JSON.stringify({
-        compareTimeStamp: compareVideo.currentTime,
-        userTimeStamp: userVideo.currentTime,
-    });
+    const poseVOs = [];
+    poseVOs.push( getTimeStampAnalyze(compareVideo.currentTime , "compare"));
+    poseVOs.push( getTimeStampAnalyze(userVideo.currentTime, "user"));
 
+    console.log(poseVOs);
 
     fetch("matchCurrentPose", {
         method : "POST",
         headers: {
             "Content-Type": "application/json"
         },
-        body : jsonData
+        body : JSON.stringify(poseVOs)
     })
 })
 
 
 analyzeAll_btn.addEventListener("click", function (){
     console.log("전체 분석 버튼 클릭");
+    const poseVOs = [];
+    poseVOs.push( compareResult);
+    poseVOs.push( userResult);
 
     fetch("matchAllPose", {
         method : "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body : JSON.stringify(poseVOs)
     })
 })
 

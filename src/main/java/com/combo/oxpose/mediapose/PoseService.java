@@ -16,10 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PoseService {
 
-    private List<PoseVO> userPoseData = new ArrayList<>();
-    private List<PoseVO> comparePoseData = new ArrayList<>();
-    private PoseVO poseVO;
-
     private final int[][] joints = {{11, 12, 13}, {12, 11, 14}, {13, 11, 15}, {14, 12, 16}, {23, 24, 25},
             {24, 23, 26}, {25, 23, 27}, {26, 24, 28}};
 
@@ -47,12 +43,7 @@ public class PoseService {
                 continue;
             }
 
-            if (part.equals("user")) {
-                poseData = userPoseData;
-            } else {
-                poseData = comparePoseData;
-            }
-            poseVO = new PoseVO();
+            PoseVO poseVO = new PoseVO();
 
             poseVO.setFrame(frame * 3);
             poseVO.setTimeStamp(timestamp * 2);
@@ -61,7 +52,7 @@ public class PoseService {
 
             for (int keyPoint = 0; keyPoint < poseLandmarksData.size(); keyPoint++) {
 
-                PoseVO.PoseKeyPoint poseKeyPoint = poseVO.new PoseKeyPoint();
+                PoseVO.PoseKeyPoint poseKeyPoint = new PoseKeyPoint();
                 poseKeyPoint.setX(poseLandmarksData.get(keyPoint).get("x"));
                 poseKeyPoint.setY(poseLandmarksData.get(keyPoint).get("y"));
                 poseKeyPoint.setZ(poseLandmarksData.get(keyPoint).get("z"));
@@ -75,7 +66,7 @@ public class PoseService {
             ArrayList<PoseKeyPoint> poseKeyPoints = new ArrayList<>();
             for (int keyPoint = 0; keyPoint < poseWorldLandmarksData.size(); keyPoint++) {
 
-                PoseVO.PoseKeyPoint poseKeyPoint = poseVO.new PoseKeyPoint();
+                PoseVO.PoseKeyPoint poseKeyPoint = new PoseKeyPoint();
                 poseKeyPoint.setX(poseWorldLandmarksData.get(keyPoint).get("x"));
                 poseKeyPoint.setY(poseWorldLandmarksData.get(keyPoint).get("y"));
                 poseKeyPoint.setZ(poseWorldLandmarksData.get(keyPoint).get("z"));
@@ -87,14 +78,14 @@ public class PoseService {
 
             ArrayList<PoseTheta> poseThetas = new ArrayList<>();
             for (int[] joint : joints) {
-                PoseVO.PoseTheta poseTheta = poseVO.new PoseTheta();
+                PoseVO.PoseTheta poseTheta = new PoseTheta();
 
                 poseTheta.setKeyPoint(joint[0]);
-                poseTheta.setTheta(getTheta(joint[0], joint[1], joint[2]));
+                poseTheta.setTheta(getTheta(joint[0], joint[1], joint[2], poseVO));
                 poseThetas.add(poseTheta);
             }
             poseVO.setPoseTheta(poseThetas);
-            addMidAnalyze(poseData, frame);
+            addMidAnalyze(poseData, poseVO, frame);
             poseData.add(poseVO);
 
             frame++;
@@ -107,7 +98,7 @@ public class PoseService {
     /**
      * 부족한 프레임을 보충하는 함수
      */
-    public void addMidAnalyze(List<PoseVO> poseData ,int frame) {
+    public void addMidAnalyze(List<PoseVO> poseData , PoseVO poseVO,int frame) {
 
         if (!poseData.isEmpty()) {
             PoseVO previousPoseVO = poseData.get(poseData.size() - 1);
@@ -123,7 +114,7 @@ public class PoseService {
                 ArrayList<PoseKeyPoint> midPoseLandmarks = new ArrayList<>();
                 for (int keyPoint = 0; keyPoint < poseVO.getPoseLandmarks().size(); keyPoint++) {
 
-                    PoseVO.PoseKeyPoint poseKeyPoint = poseVO.new PoseKeyPoint();
+                    PoseVO.PoseKeyPoint poseKeyPoint = new PoseKeyPoint();
                     poseKeyPoint.setX(
                             previousPoseLandmarks.get(keyPoint).getX() +
                                     ((poseLandmarks.get(keyPoint).getX() - previousPoseLandmarks.get(keyPoint).getX())
@@ -150,7 +141,7 @@ public class PoseService {
                 ArrayList<PoseKeyPoint> midPoseKeyPoints = new ArrayList<>();
                 for (int keyPoint = 0; keyPoint < poseVO.getPoseWorldLandmarks().size(); keyPoint++) {
 
-                    PoseVO.PoseKeyPoint poseKeyPoint = poseVO.new PoseKeyPoint();
+                    PoseVO.PoseKeyPoint poseKeyPoint = new PoseKeyPoint();
                     poseKeyPoint.setX(previousPoseKeyPoints.get(keyPoint).getX() +
                             ((poseKeyPoints.get(keyPoint).getX() - previousPoseKeyPoints.get(keyPoint).getX()) * count
                                     / 3));
@@ -276,10 +267,10 @@ public class PoseService {
      * @param sideKey2 : pointKey 주위 key2
      * @return (pointKey - > sideKey1, pointKey - > sideKey2) 사이 각
      */
-    public double getTheta(int pointKey, int sideKey1, int sideKey2) {
+    public double getTheta(int pointKey, int sideKey1, int sideKey2, PoseVO poseVO) {
 
-        double[] vector1 = calVector(pointKey, sideKey1);
-        double[] vector2 = calVector(pointKey, sideKey2);
+        double[] vector1 = calVector(pointKey, sideKey1, poseVO);
+        double[] vector2 = calVector(pointKey, sideKey2, poseVO);
 
         return calTheta(vector1, vector2);
     }
@@ -300,7 +291,7 @@ public class PoseService {
      *
      * @return vector (v1 -> v2)
      */
-    public double[] calVector(int key1, int key2) {
+    public double[] calVector(int key1, int key2, PoseVO poseVO) {
 
         double[] vector = new double[3];
         PoseKeyPoint poseKeyPoint1 = poseVO.getPoseWorldLandmarks().get(key1);
@@ -325,75 +316,6 @@ public class PoseService {
 
     public double vectorSize(double[] vector) {
         return Math.sqrt(Math.pow(vector[0], 2) + Math.pow(vector[1], 2) + Math.pow(vector[2], 2));
-    }
-
-
-    /**
-     * 주어진 timeStamp와 가장 가까운 Pose 결과를 return 하는 함수
-     */
-    public PoseVO getTimeStampAnalyze(Map<String, Object> data) {
-        double timeStamp = (double) data.get("timeStamp");
-        List<PoseVO> poseData;
-
-        if (data.get("part").equals("user")) {
-            poseData = userPoseData;
-        } else {
-            poseData = comparePoseData;
-        }
-
-        int low = 0;
-        int high = poseData.size() - 1;
-        int mid = 0;
-        double closest = poseData.get(0).getTimeStamp();
-
-        while (low <= high) {
-            mid = (low + high) / 2;
-
-            if (timeStamp == poseData.get(mid).getTimeStamp()) {
-                closest = poseData.get(mid).getTimeStamp();
-                break;
-            }
-
-            if (timeStamp < poseData.get(mid).getTimeStamp()) {
-                high = mid - 1;
-            } else {
-                low = mid + 1;
-            }
-
-            if (Math.abs(poseData.get(mid).getTimeStamp() - timeStamp) < Math.abs(closest - timeStamp)) {
-                closest = poseData.get(mid).getTimeStamp();
-            }
-        }
-        log.info("timeStamp = {} closest = {} mid = {}", timeStamp, closest, mid);
-        return poseData.get(mid);
-    }
-
-    public PoseVO getTimeStampAnalyze(List<PoseVO> poseData, double timeStamp){
-        int low = 0;
-        int high = poseData.size() - 1;
-        int mid = 0;
-        double closest = poseData.get(0).getTimeStamp();
-
-        while (low <= high) {
-            mid = (low + high) / 2;
-
-            if (timeStamp == poseData.get(mid).getTimeStamp()) {
-                closest = poseData.get(mid).getTimeStamp();
-                break;
-            }
-
-            if (timeStamp < poseData.get(mid).getTimeStamp()) {
-                high = mid - 1;
-            } else {
-                low = mid + 1;
-            }
-
-            if (Math.abs(poseData.get(mid).getTimeStamp() - timeStamp) < Math.abs(closest - timeStamp)) {
-                closest = poseData.get(mid).getTimeStamp();
-            }
-        }
-        log.info("timeStamp = {} closest = {} mid = {}", timeStamp, closest, mid);
-        return poseData.get(mid);
     }
 
 
@@ -460,23 +382,19 @@ public class PoseService {
 
     /**
      * 분석하기 버튼으로, 비교영상의 현재 자세와, 사용자 영상의
-     * @param data
+     * @param
      */
-    public void matchCurrentPose(Map<String, Double> data){
-        PoseVO poseVO1 = getTimeStampAnalyze(comparePoseData, data.get("compareTimeStamp"));
-        PoseVO poseVO2 =  getTimeStampAnalyze(userPoseData, data.get("userTimeStamp"));
-
+    public void matchCurrentPose(List<PoseVO> poseVOs){
+        PoseVO poseVO1 = poseVOs.get(0);
+        PoseVO poseVO2 = poseVOs.get(1);
 
         log.info("weight = {}", weightedDistanceMatching(poseVO1, poseVO2));
-
         for(int i = 0 ; i < poseVO1.getPoseWorldLandmarks().size(); i++){
 
             double[] newData = {poseVO1.getPoseWorldLandmarks().get(i).getX() , poseVO1.getPoseWorldLandmarks().get(i).getY()
             ,poseVO1.getPoseWorldLandmarks().get(i).getZ()};
-
             double[] newData2 = {poseVO2.getPoseWorldLandmarks().get(i).getX() , poseVO2.getPoseWorldLandmarks().get(i).getY()
                     ,poseVO2.getPoseWorldLandmarks().get(i).getZ()};
-
 
             log.info("index = {}   consine = {}",i, cosineSimilarity(newData, newData2));
         }
@@ -485,7 +403,9 @@ public class PoseService {
     /**
      *  현재 사용자 영상과 비교 영상의 가중치거리를 측정하는 함수
      */
-    public void matchAllPose(){
+    public void matchAllPose(List<List<PoseVO>> poseVOs){
+        List<PoseVO> userPoseData = poseVOs.get(0);
+        List<PoseVO> comparePoseData = poseVOs.get(1);
 
         double [][] weightedDistance = new double[userPoseData.size()+1][comparePoseData.size()+1];
         int [][] dp = new int[userPoseData.size()+1][comparePoseData.size()+1];
