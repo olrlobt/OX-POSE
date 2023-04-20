@@ -27,7 +27,7 @@ public class PoseService {
      */
     public List<PoseVO> setAnalyzePose(Map<String, Object> data) {
         int frame = 0;
-        String part = (String) data.get("part");
+
         List<Map<String, Object>> poseList = (List<Map<String, Object>>) data.get("data");
         log.info("size = {}", poseList.size());
 

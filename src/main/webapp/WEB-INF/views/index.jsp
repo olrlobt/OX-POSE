@@ -121,7 +121,7 @@ html, body {
 	display: none;
 }
 
-.compare_video_back{
+.compare_video_back, .user_video_back{
 	position: absolute;
 	top : 5px;
 	left: 5px;
@@ -573,7 +573,7 @@ label {
       	e.target === modal_background ?  close() : false;
       })
       
-      function close(){
+	  function close(){
    	  	modal.classList.remove('show-modal');
         modal_background.classList.remove('show-modal');
         document.body.style.overflow = 'auto';

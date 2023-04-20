@@ -105,14 +105,11 @@ async function Analyze(part, poseModel) {
     );
 
     poseModel.onResults((results) => {
-        //saveAnalyzeData(results, part, analyze_video);
-        //drawSkeleton(results, canvasCtx, grid);
 
         const jsonData = {
             poseLandmarks : results.poseLandmarks,
             poseWorldLandmarks : results.poseWorldLandmarks,
-            timestamp: analyze_video.currentTime - 0.1,
-            // part: part,
+            timestamp: analyze_video.currentTime - 0.08,
         };
         analyze_data.push(jsonData);
         document.querySelector("." + part + "_loading").querySelector(".progress-bar__bar").style.transform = `translateX(${analyze_video.currentTime/(analyze_video.duration) *100}%)`;
@@ -125,6 +122,7 @@ async function Analyze(part, poseModel) {
 
         video_box.style.display = "none";
         button_box.style.display = "flex";
+        document.getElementById(part + "_input_video").value = "";
         landmarkContainer.querySelector('div').remove();
     });
 
@@ -176,7 +174,6 @@ async function Analyze(part, poseModel) {
 
         const jsonData = JSON.stringify({
             data : analyze_data,
-            part : part,
         });
         $.ajax({
             type: 'POST',
@@ -370,7 +367,7 @@ function getTimeStampAnalyze(timeStamp, part){
 
     let closest = result[0].timeStamp;
 
-    while (low <= high) {
+    while (low < high) {
         let mid = Math.floor((low + high) / 2);
 
         if (timeStamp == result[mid].timeStamp) {
