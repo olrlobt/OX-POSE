@@ -473,10 +473,9 @@ label {
 					</div>
 				</div>
 			</div>
-		<%--결과 출력 Canvas--%>
+		<%--3D grid 출력 부분--%>
 			<div class="video_analyze_canvas">
 					<div class="canvas_box">
-
 						<div class='square-box'>
 							<div class="compare_landmark_grid_container">
 							</div>
@@ -486,8 +485,6 @@ label {
 							</div>
 						</div>
 					</div>
-
-
 			</div>
 		</div>
 
@@ -502,13 +499,13 @@ label {
 				<div><button id = "analyzeAll_btn"> 전체 자세 측정</button></div>
 				<div>
 					<label>
-						<input role="switch" type="checkbox" />
+						<input role="switch" type="checkbox" id="isCanvas" checked />
 						<span>Canvas</span>
 					</label>
 				</div>
 				<div>
 					<label>
-						<input role="switch" type="checkbox" />
+						<input role="switch" type="checkbox" id="is3DGrid" checked />
 						<span>3D Grid</span>
 					</label>
 				</div>

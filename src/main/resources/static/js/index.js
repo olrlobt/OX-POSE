@@ -6,6 +6,8 @@ const compare_video_btn = document.getElementById("compare_video_btn");
 const compare_input_video = document.getElementById("compare_input_video");
 const analyze_btn = document.getElementById("analyze_btn");
 const analyzeAll_btn = document.getElementById("analyzeAll_btn");
+const isCanvas = document.getElementById("isCanvas");
+const is3DGrid = document.getElementById("is3DGrid");
 
 // keyPoint 구분
 const leftIndices = [1, 2, 3, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31];
@@ -26,6 +28,24 @@ let camera;
 
 let compareResult = [];
 let userResult = [];
+
+is3DGrid.addEventListener("click",function (){
+    if(this.checked){
+        document.getElementsByClassName("video_analyze_canvas")[0].style.display = "block";
+    }else {
+        document.getElementsByClassName("video_analyze_canvas")[0].style.display = "none";
+    }
+});
+
+isCanvas.addEventListener("click",function (){
+    if(this.checked){
+        document.getElementsByClassName("compare_canvas")[0].style.display = "block";
+        document.getElementsByClassName("user_canvas")[0].style.display = "block";
+    }else {
+        document.getElementsByClassName("compare_canvas")[0].style.display = "none";
+        document.getElementsByClassName("user_canvas")[0].style.display = "none";
+    }
+});
 
 
 // 비디오 크기를 조절하는 함수
@@ -70,7 +90,8 @@ async function Analyze(part, poseModel) {
     const loading_background = document.getElementsByClassName(part +'_loading_background')[0];
     const analyze_data = [];
 
-
+    loading.classList.add('show-modal');
+    loading_background.classList.add('show-modal');
     show_video.pause();
     const analyze_video = createVideoElement(video_box, await setPlaybackRate(input_video));
     analyze_video.style.display = "none";
@@ -82,8 +103,6 @@ async function Analyze(part, poseModel) {
         canvasCtx.canvas.width = analyze_video.videoWidth;
         canvasCtx.canvas.height = analyze_video.videoHeight;
         canvasCtx.canvas.style.width = "100%";
-        loading.classList.add('show-modal');
-        loading_background.classList.add('show-modal');
         poseModel.initialize().then(() => {
             analyze_video.pause();
             requestAnalyze(analyze_video, canvasCtx, poseModel, loading,loading_background);
@@ -248,7 +267,7 @@ function createVideoElement(video_box, srcURL) {
  */
 function drawSkeleton(results, canvasCtx, grid) {
     // console.log(results);
-    if (results.poseLandmarks) {
+    if (results.poseLandmarks && isCanvas.checked) {
         let leftKeyPoint = [];
         let rightKeyPoint = [];
 
@@ -281,7 +300,7 @@ function drawSkeleton(results, canvasCtx, grid) {
         canvasCtx.restore();
 
     }
-    if (results.poseWorldLandmarks) {
+    if (results.poseWorldLandmarks && is3DGrid.checked) {
         grid.updateLandmarks(results.poseWorldLandmarks, [
                 {list: leftConnections, color: 'LEFTCONNECTIONS'},
                 {list: rightConnections, color: 'RIGHTCONNECTIONS'},
