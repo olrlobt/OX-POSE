@@ -401,9 +401,11 @@ public class PoseService {
     }
 
     /**
-     *  현재 사용자 영상과 비교 영상의 가중치거리를 측정하는 함수
+     * 현재 사용자 영상과 비교 영상의 가중치거리를 측정하는 함수
+     *
+     * @return
      */
-    public void matchAllPose(List<List<PoseVO>> poseVOs){
+    public List<PoseVO> matchAllPose(List<List<PoseVO>> poseVOs){
         List<PoseVO> userPoseData = poseVOs.get(0);
         List<PoseVO> comparePoseData = poseVOs.get(1);
 
@@ -412,6 +414,7 @@ public class PoseService {
         int max = 0;
         int maxI = 0;
         int maxJ = 0;
+        List<PoseVO> result = new ArrayList<>();
 
         for(int i = 1 ;  i <= userPoseData.size(); i++){
             for(int j = 1 ;  j <= comparePoseData.size(); j++){
@@ -435,6 +438,8 @@ public class PoseService {
 
         log.info("max = {}  i = {}   j = {} " , max, maxI, maxJ);
         log.info("start userFrame = {}   start compareFrame = {} " ,  maxI - max, maxJ - max);
+
+        return Arrays.asList(poseVOs.get(0).get(maxI - max) , poseVOs.get(1).get(maxJ - max));
     }
 
 }

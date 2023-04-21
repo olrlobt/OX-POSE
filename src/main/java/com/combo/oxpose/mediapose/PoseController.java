@@ -81,8 +81,8 @@ public class PoseController {
 
 	@ResponseBody
 	@PostMapping("/matchAllPose")
-	public void matchAllPose(@RequestBody List<List<PoseVO>> poseVOs){
+	public List<PoseVO> matchAllPose(@RequestBody List<List<PoseVO>> poseVOs){
 
-		poseService.matchAllPose(poseVOs);
+		return poseService.matchAllPose(poseVOs);
 	}
 }

@@ -354,8 +354,8 @@ analyze_btn.addEventListener("click", function (){
 analyzeAll_btn.addEventListener("click", function (){
     console.log("전체 분석 버튼 클릭");
     const poseVOs = [];
-    poseVOs.push( compareResult);
-    poseVOs.push( userResult);
+    poseVOs.push(compareResult);
+    poseVOs.push(userResult);
 
     fetch("matchAllPose", {
         method : "POST",
@@ -363,7 +363,23 @@ analyzeAll_btn.addEventListener("click", function (){
             "Content-Type": "application/json"
         },
         body : JSON.stringify(poseVOs)
-    })
+    }).then(response => response.json())
+        .then(data => {
+            console.log(data);
+            console.log(data[0].timeStamp);
+            console.log(data[1].timeStamp);
+            if (!isNaN(data[0].timeStamp) && isFinite(data[0].timeStamp) && !isNaN(data[1].timeStamp) && isFinite(data[1].timeStamp)) {
+                document.querySelector(".user_video_box video").currentTime = data[0].timeStamp;
+                document.querySelector(".compare_video_box video").currentTime = data[1].timeStamp;
+            }
+
+
+        }).catch(error => {
+
+            console.error(error);
+        });
+
+
 })
 
 
