@@ -28,6 +28,7 @@ let camera;
 
 let compareResult = [];
 let userResult = [];
+let playTime=0 ;
 
 is3DGrid.addEventListener("click",function (){
     if(this.checked){
@@ -89,6 +90,12 @@ async function Analyze(part, poseModel) {
     const loading = document.getElementsByClassName(part +'_loading')[0];
     const loading_background = document.getElementsByClassName(part +'_loading_background')[0];
     const analyze_data = [];
+
+    show_video.onloadedmetadata = () =>{
+        if(show_video.duration > playTime){
+            playTime = show_video.duration;
+        }
+    }
 
     loading.classList.add('show-modal');
     loading_background.classList.add('show-modal');
@@ -501,3 +508,64 @@ const gridOption = {
     rotationSpeed : 0.5,
 }
 
+const playBtn = document.querySelector(".material-symbols-outlined");
+
+playBtn.addEventListener("click",function (){
+    if(playBtn.innerHTML == "play_arrow"){ // 재생
+        playBtn.innerHTML = "pause";
+        document.querySelector(".user_video_box video").play();
+        document.querySelector(".compare_video_box video").play();
+    }else{
+        playBtn.innerHTML = "play_arrow";   // 일시정지
+        document.querySelector(".user_video_box video").pause();
+        document.querySelector(".compare_video_box video").pause();
+    }
+})
+
+
+const play_duration = document.querySelector('.play-bar');
+const compare_play_bar = document.querySelector('.compare_play-bar');
+const user_play_bar = document.querySelector('.user_play-bar');
+
+compare_play_bar.addEventListener('mousedown', (event) => {
+    const startX = event.clientX - compare_play_bar.offsetLeft;
+
+    function onMouseMove(event) {
+        const newLeft = event.clientX - startX;
+        const maxLeft = play_duration.offsetWidth - compare_play_bar.offsetWidth;
+        const clampedLeft = Math.min(Math.max(0, newLeft), maxLeft);
+        compare_play_bar.style.left = `${clampedLeft}px`;
+
+        const percentage = clampedLeft / maxLeft;
+        const currentTime = playTime * percentage;
+
+        document.querySelector(".compare_video_box video").currentTime = currentTime;
+    }
+
+    document.addEventListener('mousemove', onMouseMove);
+
+    document.addEventListener('mouseup', () => {
+        document.removeEventListener('mousemove', onMouseMove);
+    }, { once: true });
+});
+
+user_play_bar.addEventListener('mousedown', (event) => {
+    const startX = event.clientX - user_play_bar.offsetLeft;
+
+    function onMouseMove(event) {
+        const newLeft = event.clientX - startX;
+        const maxLeft = play_duration.offsetWidth - user_play_bar.offsetWidth;
+        const clampedLeft = Math.min(Math.max(0, newLeft), maxLeft);
+        user_play_bar.style.left = `${clampedLeft}px`;
+
+        const percentage = clampedLeft / maxLeft;
+        const currentTime = playTime * percentage;
+        document.querySelector(".user_video_box video").currentTime = currentTime;
+    }
+
+    document.addEventListener('mousemove', onMouseMove);
+
+    document.addEventListener('mouseup', () => {
+        document.removeEventListener('mousemove', onMouseMove);
+    }, { once: true });
+});

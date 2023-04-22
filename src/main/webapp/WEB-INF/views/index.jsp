@@ -53,14 +53,14 @@ html, body {
 	justify-content: start;
 	width: 100%;
 	height: 100%;
-	border-bottom: 6px solid #2b487b;
-	padding-bottom: 5%;
+
 	overflow: hidden;
 }
 
 
 .video_analyze_canvas{
 	width: 100%;
+	border-top: 6px solid #2b487b;
 }
 
 .canvas_box{
@@ -190,6 +190,8 @@ html, body {
 .compare_loading_background.show-modal, .user_loading_background.show-modal {
 	display: block;
 }
+
+/* loading */
 .loading_body {
 	position: absolute;
 	top: 50%;
@@ -229,10 +231,77 @@ html, body {
 }
 
 .progress-bar__bar.active {
-	transition: all 10000ms ease-out;
+	/*transition: all 10000ms ease-out;*/
 	transform: translateX(100%);
 	-webkit-transform: translateX(100%)
 }
+
+/* play bar */
+.play-bar-box{
+	width: 80%;
+	margin: auto;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 1%;
+}
+.play-bar{
+	background-color: #ececec;
+	border-radius: 4px;
+	box-shadow: inset 0 0.5em 0.5em rgba(0,0,0,0.05);
+	height: 8px;
+	width: 60% !important;
+	/*margin: 2rem 0 2rem 0;*/
+	/*overflow: hidden;*/
+	position: relative;
+	transform: translateZ(0);
+	width: 100%;
+}
+.compare_play-bar{
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 2%;
+	height: 160%;
+	background-color: blue;
+	cursor: pointer;
+}
+.user_play-bar{
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	width: 2%;
+	height: 160%;
+	background-color: red;
+	cursor: pointer;
+}
+
+/*.play-bar__bar:before {*/
+/*	content: "";*/
+/*	position: absolute;*/
+/*	left: -8px;*/
+/*	top: 15px;*/
+/*	width: 0;*/
+/*	height: 0;*/
+/*	border-left: 8px solid transparent;*/
+/*	border-right: 8px solid transparent;*/
+/*	border-bottom: 12px solid #e00;*/
+/*}*/
+
+/*.play-bar__bar:after {*/
+/*	content: "";*/
+/*	position: absolute;*/
+/*	left: -8px;*/
+/*	bottom: 15px;*/
+/*	width: 0;*/
+/*	height: 0;*/
+/*	border-left: 8px solid transparent;*/
+/*	border-right: 8px solid transparent;*/
+/*	border-top: 12px solid #00e;*/
+/*}*/
+
+
+
 
 
 /* modal */
@@ -335,7 +404,6 @@ html, body {
 
 
 /* check box*/
-
 label {
 	display: inline-flex;
 	align-items: center;
@@ -402,6 +470,9 @@ label {
 
 </style>
 
+<%-- google font icon	--%>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,400,1,0" />
+
 <!-- media pipe -->
 <script
 	src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"
@@ -445,9 +516,8 @@ label {
 							</div>
 						</div>
 					</div>
-
-
 				</div>
+
 				<div class="video_box user_box">
 					<div class="user_button_box">
 						<button id="user_live_button">실시간</button>
@@ -472,6 +542,14 @@ label {
 						</div>
 					</div>
 				</div>
+			</div>
+			<div class = "play-bar-box">
+				<span class="material-symbols-outlined" style="color: #5f89e6; cursor: pointer; margin: 1%;">play_arrow</span>
+				<div class="play-bar">
+					<div class="compare_play-bar"></div>
+					<div class="user_play-bar"></div>
+				</div>
+				<div class="play-time">12:11 / 13:00</div>
 			</div>
 		<%--3D grid 출력 부분--%>
 			<div class="video_analyze_canvas">
