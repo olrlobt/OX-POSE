@@ -573,8 +573,9 @@ label {
 					<label for="video_ratio">비율</label>
 					<input id="video_ratio" type="range" min="0.5" max="1.6" step="any">
 				</div>
-				<div><button id = "analyze_btn"> 현재 자세 측정</button></div>
-				<div><button id = "analyzeAll_btn"> 전체 자세 측정</button></div>
+				<div><button id = "analyze_btn"> 자세 비교</button></div>
+				<div><button id = "analyzeCurrent_btn"> 현재 자세 측정</button></div>
+				<div><button id = "analyzeAll_btn"> 전체 자세 매칭</button></div>
 				<div>
 					<label>
 						<input role="switch" type="checkbox" id="isCanvas" checked />
@@ -598,6 +599,12 @@ label {
 			</div>
 			<div class="video_analyze_result">
 				<h3> 결과 </h3>
+				<div class="result_box">
+
+
+
+				</div>
+
 			</div>
 		</div>
 	</section>

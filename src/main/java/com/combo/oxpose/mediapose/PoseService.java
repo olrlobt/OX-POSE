@@ -335,18 +335,20 @@ public class PoseService {
 
     /**
      * 코사인 유사도를 계산하는 함수
-     * @param A : 벡터 A
-     * @param B : 벡터 B
      * @return 벡터 A와 벡터 B의 유사도
      */
-    public double cosineSimilarity(double[] A, double[] B) {
+    public double cosineSimilarity(PoseKeyPoint poseWorldLandmarks1 , PoseKeyPoint poseWorldLandmarks2) {
+        double[] A = {poseWorldLandmarks1.getX() , poseWorldLandmarks1.getY()
+                ,poseWorldLandmarks1.getZ()};
+        double[] B = {poseWorldLandmarks2.getX() , poseWorldLandmarks2.getY()
+                ,poseWorldLandmarks2.getZ()};
+
         double dotProduct = dotProduct(A , B);
         double mA = Math.sqrt(dotProduct(A, A));
         double mB = Math.sqrt(dotProduct(B, B));
 
         return (dotProduct) / ((mA) * (mB));
     }
-
 
     /**
      * 가중치 유사도를 계산하는 함수
@@ -391,12 +393,7 @@ public class PoseService {
         log.info("weight = {}", weightedDistanceMatching(poseVO1, poseVO2));
         for(int i = 0 ; i < poseVO1.getPoseWorldLandmarks().size(); i++){
 
-            double[] newData = {poseVO1.getPoseWorldLandmarks().get(i).getX() , poseVO1.getPoseWorldLandmarks().get(i).getY()
-            ,poseVO1.getPoseWorldLandmarks().get(i).getZ()};
-            double[] newData2 = {poseVO2.getPoseWorldLandmarks().get(i).getX() , poseVO2.getPoseWorldLandmarks().get(i).getY()
-                    ,poseVO2.getPoseWorldLandmarks().get(i).getZ()};
-
-            log.info("index = {}   consine = {}",i, cosineSimilarity(newData, newData2));
+            log.info("index = {}   consine = {}", i, cosineSimilarity(poseVO1.getPoseWorldLandmarks().get(i), poseVO2.getPoseWorldLandmarks().get(i)));
         }
     }
 
@@ -438,8 +435,104 @@ public class PoseService {
 
         log.info("max = {}  i = {}   j = {} " , max, maxI, maxJ);
         log.info("start userFrame = {}   start compareFrame = {} " ,  maxI - max, maxJ - max);
-
+        log.info("LastUserTime = {}   LastCompareTime = {} " ,  poseVOs.get(0).get(maxI).getTimeStamp(), poseVOs.get(1).get(maxJ).getTimeStamp());
+        log.info("start userTime = {}   start compareTime = {} " ,  poseVOs.get(0).get(maxI - max).getTimeStamp(), poseVOs.get(1).get(maxJ - max).getTimeStamp());
         return Arrays.asList(poseVOs.get(0).get(maxI - max) , poseVOs.get(1).get(maxJ - max));
     }
 
+
+    public List<PoseVO> requestComparePose(List<List<PoseVO>> poseVOs){
+        List<PoseVO> userPoseData = poseVOs.get(0);
+        List<PoseVO> comparePoseData = poseVOs.get(1);
+        List<PoseVO> result = new ArrayList<>();
+
+        for(int i = 0; i < userPoseData.size(); i ++){
+
+            PoseVO userPose = userPoseData.get(i);
+            PoseVO comparePose = comparePoseData.get(i);
+            PoseVO resultPose = new PoseVO();
+            if(weightedDistanceMatching(userPose, comparePose) < 0.2){
+                continue;
+            }
+            resultPose.setTimeStamp(comparePose.getTimeStamp());
+
+            ArrayList<PoseKeyPoint> resultWorldLandmarks = new ArrayList<>();
+            for(int j = 0 ; j < 33; j ++){
+                PoseKeyPoint userPoseKey = userPose.getPoseWorldLandmarks().get(j);
+                PoseKeyPoint comparePoseKey = comparePose.getPoseWorldLandmarks().get(j);
+
+                PoseKeyPoint resultPoseKey = new PoseKeyPoint();
+                if(cosineSimilarity(userPoseKey , comparePoseKey) < 0.8){
+
+                    resultPoseKey.setX(comparePoseKey.getX() - userPoseKey.getX());
+                    resultPoseKey.setY(comparePoseKey.getY() - userPoseKey.getY());
+                    resultPoseKey.setZ(comparePoseKey.getZ() - userPoseKey.getZ());
+                }
+                resultWorldLandmarks.add(resultPoseKey);
+
+            }
+            resultPose.setPoseWorldLandmarks(resultWorldLandmarks);
+            result.add(resultPose);
+        }
+
+        return result;
+    }
+
+    public List<CommandVO> requestCommand(List<PoseVO> data) {
+
+        List<CommandVO> commandVOS = new ArrayList<>();
+
+        int []test = new int[]{19,20,31,32,13,14,25,26};
+        // 19 20 손   // 31 32 발
+        // 13 14 팔꿈 // 25 26 무릎
+        for(PoseVO poseVO : data){
+            CommandVO commandVO = new CommandVO();
+            commandVO.setTimeStamp(poseVO.getTimeStamp());
+
+
+            List<String> command = new ArrayList<>();
+            for(int i = 0 ; i < 33 ; i ++){
+                PoseKeyPoint poseKeyPoint = poseVO.getPoseWorldLandmarks().get(i);
+                if(poseKeyPoint.getX() == 0){
+                    continue;
+                }
+
+                int finalI = i;
+                if(Arrays.stream(test).anyMatch(index -> index == finalI)){
+                    StringBuffer sb = new StringBuffer();
+                    double Max = Math.max(Math.max(Math.abs(poseKeyPoint.getX()) , Math.abs(poseKeyPoint.getY())),Math.abs(poseKeyPoint.getZ()));
+                    sb.append(i).append("를 ");
+                    if(Max == Math.abs(poseKeyPoint.getX())){
+                        if(Math.abs(poseKeyPoint.getX()) > 0){
+                            sb.append("왼쪽 ");
+                        }else{
+                            sb.append("오른쪽 ");
+                        }
+                    }else if(Max == Math.abs(poseKeyPoint.getY())){
+                        if(Math.abs(poseKeyPoint.getY()) > 0){
+                            sb.append("위로 ");
+                        }else{
+                            sb.append("아래로 ");
+                        }
+
+                    }else {
+                        if(Math.abs(poseKeyPoint.getZ()) > 0){
+                            sb.append("뒤로 ");
+                        }else{
+                            sb.append("앞으로 ");
+                        }
+                    }
+
+                    command.add(String.valueOf(sb));
+                }else{
+                    continue;
+                }
+            }
+            commandVO.setCommand(command);
+            commandVOS.add(commandVO);
+        }
+
+
+        return commandVOS;
+    }
 }

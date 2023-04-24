@@ -85,4 +85,15 @@ public class PoseController {
 
 		return poseService.matchAllPose(poseVOs);
 	}
+
+	@ResponseBody
+	@PostMapping("/requestComparePose")
+	public List<CommandVO> requestComparePose(@RequestBody List<List<PoseVO>> poseVOs){
+
+		List<PoseVO> data = poseService.requestComparePose(poseVOs);
+		return poseService.requestCommand(data);
+
+	}
+
+
 }

@@ -5,9 +5,12 @@ const user_live_button = document.getElementById("user_live_button");
 const compare_video_btn = document.getElementById("compare_video_btn");
 const compare_input_video = document.getElementById("compare_input_video");
 const analyze_btn = document.getElementById("analyze_btn");
+const analyzeCurrent_btn = document.getElementById("analyzeCurrent_btn");
 const analyzeAll_btn = document.getElementById("analyzeAll_btn");
 const isCanvas = document.getElementById("isCanvas");
 const is3DGrid = document.getElementById("is3DGrid");
+
+const play_duration = document.querySelector('.play-bar');
 
 // keyPoint 구분
 const leftIndices = [1, 2, 3, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31];
@@ -28,6 +31,7 @@ let camera;
 
 let compareResult = [];
 let userResult = [];
+let command= [];
 let playTime=0 ;
 
 is3DGrid.addEventListener("click",function (){
@@ -89,6 +93,9 @@ async function Analyze(part, poseModel) {
     const grid = new LandmarkGrid(landmarkContainer, gridOption);
     const loading = document.getElementsByClassName(part +'_loading')[0];
     const loading_background = document.getElementsByClassName(part +'_loading_background')[0];
+    const play_bar = document.getElementsByClassName(part+"_play-bar")[0];
+
+
     const analyze_data = [];
 
     show_video.onloadedmetadata = () =>{
@@ -118,6 +125,7 @@ async function Analyze(part, poseModel) {
     show_video.addEventListener('play', () =>{
             const intervalID = setInterval(() => {
                 drawSkeleton(getTimeStampAnalyze(show_video.currentTime, part), canvasCtx, grid);
+                document.querySelector(".result_box").innerHTML = getTimeStampCommand(show_video.currentTime);
             }, 100);
 
             show_video.addEventListener('pause' ,function () {
@@ -129,6 +137,37 @@ async function Analyze(part, poseModel) {
     show_video.addEventListener('seeking', () =>
          drawSkeleton(getTimeStampAnalyze(show_video.currentTime, part), canvasCtx, grid)
     );
+    show_video.addEventListener('timeupdate', () => {
+            const percentage = (show_video.currentTime / playTime) * 100;
+            const maxLeft = play_duration.offsetWidth - play_bar.offsetWidth;
+            const clampedLeft = (percentage / 100) * maxLeft;
+            play_bar.style.left = `${clampedLeft}px`;
+
+        }
+    );
+
+    play_bar.addEventListener('mousedown', (event) => {
+        const startX = event.clientX - play_bar.offsetLeft;
+
+        function onMouseMove(event) {
+            const newLeft = event.clientX - startX;
+            const maxLeft = play_duration.offsetWidth - play_bar.offsetWidth;
+            const clampedLeft = Math.min(Math.max(0, newLeft), maxLeft);
+            play_bar.style.left = `${clampedLeft}px`;
+
+            const percentage = clampedLeft / maxLeft;
+            const currentTime = playTime * percentage;
+
+            show_video.currentTime = currentTime;
+        }
+
+        document.addEventListener('mousemove', onMouseMove);
+
+        document.addEventListener('mouseup', () => {
+            document.removeEventListener('mousemove', onMouseMove);
+        }, { once: true });
+    });
+
 
     poseModel.onResults((results) => {
 
@@ -337,10 +376,51 @@ function deleteVideo(show_video, analyze_video) {
     }
 }
 
+// 현재 타임부터 ~ 끝까지 결과를 비교 요청
 analyze_btn.addEventListener("click", function (){
-    console.log("분석 버튼 클릭");
-    const compareVideo = document.getElementsByClassName('compare_video_box')[0].querySelector('video');
-    const userVideo = document.getElementsByClassName('user_video_box')[0].querySelector('video');
+
+    const compareVideo = document.querySelector('.compare_video_box video');
+    const userVideo = document.querySelector('.user_video_box video');
+
+    if(!compareVideo || !userVideo){
+        return;
+    }
+    //compareResult // userResult
+
+    const compareStartFrame = getTimeStampAnalyze(compareVideo.currentTime,"compare").frame;
+    const userStartFrame = getTimeStampAnalyze(userVideo.currentTime,"user").frame;
+
+    let frameLength = compareResult.length - compareStartFrame;
+    if(compareResult.length - compareStartFrame > userResult.length - userStartFrame){
+        frameLength = userResult.length - userStartFrame;
+    }
+
+    const compareData = compareResult.slice(compareStartFrame, compareStartFrame + frameLength);
+    const userData = userResult.slice(userStartFrame, userStartFrame + frameLength);
+
+
+
+    fetch("requestComparePose", {
+        method : "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body : JSON.stringify([userData,compareData])
+    }).then(response => response.json())
+        .then(data => {
+            console.log(data);
+            // 이 데이터의 좌표 차이를 이용해서 분석 결과를 저장하고, 시간대에 따라 출력;
+            command = data;
+
+        }).catch(error => console.error(error));
+});
+
+
+
+analyzeCurrent_btn.addEventListener("click", function (){
+    console.log("현재 분석 버튼 클릭");
+    const compareVideo = document.querySelector('.compare_video_box video');
+    const userVideo = document.querySelector('.user_video_box video');
 
     const poseVOs = [];
     poseVOs.push( getTimeStampAnalyze(compareVideo.currentTime , "compare"));
@@ -378,15 +458,11 @@ analyzeAll_btn.addEventListener("click", function (){
             if (!isNaN(data[0].timeStamp) && isFinite(data[0].timeStamp) && !isNaN(data[1].timeStamp) && isFinite(data[1].timeStamp)) {
                 document.querySelector(".user_video_box video").currentTime = data[0].timeStamp;
                 document.querySelector(".compare_video_box video").currentTime = data[1].timeStamp;
+
             }
-
-
         }).catch(error => {
-
             console.error(error);
         });
-
-
 })
 
 
@@ -433,8 +509,25 @@ function getTimeStampAnalyze(timeStamp, part){
 
 
 
+function getTimeStampCommand(timeStamp){
 
+    if(command){
+        let start = 0;
+        let end = command.length - 1;
+        let result = -1;
 
+        while (start <= end) {
+            let mid = Math.floor((start + end) / 2);
+            if (command[mid].timeStamp < timeStamp) {
+                result = command[mid].command;
+                start = mid + 1;
+            } else {
+                end = mid - 1;
+            }
+        }
+        return result;
+    }
+}
 
 
 
@@ -521,51 +614,3 @@ playBtn.addEventListener("click",function (){
         document.querySelector(".compare_video_box video").pause();
     }
 })
-
-
-const play_duration = document.querySelector('.play-bar');
-const compare_play_bar = document.querySelector('.compare_play-bar');
-const user_play_bar = document.querySelector('.user_play-bar');
-
-compare_play_bar.addEventListener('mousedown', (event) => {
-    const startX = event.clientX - compare_play_bar.offsetLeft;
-
-    function onMouseMove(event) {
-        const newLeft = event.clientX - startX;
-        const maxLeft = play_duration.offsetWidth - compare_play_bar.offsetWidth;
-        const clampedLeft = Math.min(Math.max(0, newLeft), maxLeft);
-        compare_play_bar.style.left = `${clampedLeft}px`;
-
-        const percentage = clampedLeft / maxLeft;
-        const currentTime = playTime * percentage;
-
-        document.querySelector(".compare_video_box video").currentTime = currentTime;
-    }
-
-    document.addEventListener('mousemove', onMouseMove);
-
-    document.addEventListener('mouseup', () => {
-        document.removeEventListener('mousemove', onMouseMove);
-    }, { once: true });
-});
-
-user_play_bar.addEventListener('mousedown', (event) => {
-    const startX = event.clientX - user_play_bar.offsetLeft;
-
-    function onMouseMove(event) {
-        const newLeft = event.clientX - startX;
-        const maxLeft = play_duration.offsetWidth - user_play_bar.offsetWidth;
-        const clampedLeft = Math.min(Math.max(0, newLeft), maxLeft);
-        user_play_bar.style.left = `${clampedLeft}px`;
-
-        const percentage = clampedLeft / maxLeft;
-        const currentTime = playTime * percentage;
-        document.querySelector(".user_video_box video").currentTime = currentTime;
-    }
-
-    document.addEventListener('mousemove', onMouseMove);
-
-    document.addEventListener('mouseup', () => {
-        document.removeEventListener('mousemove', onMouseMove);
-    }, { once: true });
-});
