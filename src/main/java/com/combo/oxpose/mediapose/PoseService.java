@@ -482,13 +482,12 @@ public class PoseService {
 
         List<CommandVO> commandVOS = new ArrayList<>();
 
-        int []test = new int[]{19,20,31,32,13,14,25,26};
+        int []test = new int[]{11,12,13,14,15,16,23,24,25,26,27,28};
         // 19 20 손   // 31 32 발
         // 13 14 팔꿈 // 25 26 무릎
         for(PoseVO poseVO : data){
             CommandVO commandVO = new CommandVO();
             commandVO.setTimeStamp(poseVO.getTimeStamp());
-
 
             List<String> command = new ArrayList<>();
             for(int i = 0 ; i < 33 ; i ++){
@@ -501,7 +500,7 @@ public class PoseService {
                 if(Arrays.stream(test).anyMatch(index -> index == finalI)){
                     StringBuffer sb = new StringBuffer();
                     double Max = Math.max(Math.max(Math.abs(poseKeyPoint.getX()) , Math.abs(poseKeyPoint.getY())),Math.abs(poseKeyPoint.getZ()));
-                    sb.append(i).append("를 ");
+                    sb.append(KeyPointName.valueOf(i).getName()).append(" ");
                     if(Max == Math.abs(poseKeyPoint.getX())){
                         if(Math.abs(poseKeyPoint.getX()) > 0){
                             sb.append("왼쪽 ");
@@ -531,7 +530,6 @@ public class PoseService {
             commandVO.setCommand(command);
             commandVOS.add(commandVO);
         }
-
 
         return commandVOS;
     }
