@@ -5,12 +5,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.math3.linear.MatrixUtils;
+import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.linear.SingularValueDecomposition;
 import org.springframework.stereotype.Service;
 
 import com.combo.oxpose.mediapose.PoseVO.PoseKeyPoint;
 import com.combo.oxpose.mediapose.PoseVO.PoseTheta;
 
 import lombok.extern.slf4j.Slf4j;
+
 
 @Service
 @Slf4j
@@ -440,7 +444,11 @@ public class PoseService {
         return Arrays.asList(poseVOs.get(0).get(maxI - max) , poseVOs.get(1).get(maxJ - max));
     }
 
-
+    /**
+     * 비슷하지 않은 포즈를 선별하는 함수
+     * @param poseVOs
+     * @return
+     */
     public List<PoseVO> requestComparePose(List<List<PoseVO>> poseVOs){
         List<PoseVO> userPoseData = poseVOs.get(0);
         List<PoseVO> comparePoseData = poseVOs.get(1);
@@ -451,23 +459,25 @@ public class PoseService {
             PoseVO userPose = userPoseData.get(i);
             PoseVO comparePose = comparePoseData.get(i);
             PoseVO resultPose = new PoseVO();
-            if(weightedDistanceMatching(userPose, comparePose) < 0.2){
-                continue;
-            }
+
             resultPose.setTimeStamp(comparePose.getTimeStamp());
 
             ArrayList<PoseKeyPoint> resultWorldLandmarks = new ArrayList<>();
             for(int j = 0 ; j < 33; j ++){
+
+                if(weightedDistanceMatching(userPose, comparePose) < 0.2){
+                    break;
+                }
+
                 PoseKeyPoint userPoseKey = userPose.getPoseWorldLandmarks().get(j);
                 PoseKeyPoint comparePoseKey = comparePose.getPoseWorldLandmarks().get(j);
 
                 PoseKeyPoint resultPoseKey = new PoseKeyPoint();
-                if(cosineSimilarity(userPoseKey , comparePoseKey) < 0.8){
 
-                    resultPoseKey.setX(comparePoseKey.getX() - userPoseKey.getX());
-                    resultPoseKey.setY(comparePoseKey.getY() - userPoseKey.getY());
-                    resultPoseKey.setZ(comparePoseKey.getZ() - userPoseKey.getZ());
-                }
+                resultPoseKey.setX(comparePoseKey.getX() - userPoseKey.getX());
+                resultPoseKey.setY(comparePoseKey.getY() - userPoseKey.getY());
+                resultPoseKey.setZ(comparePoseKey.getZ() - userPoseKey.getZ());
+
                 resultWorldLandmarks.add(resultPoseKey);
 
             }
@@ -478,19 +488,30 @@ public class PoseService {
         return result;
     }
 
+
+    /**
+     * data에 따라 command를 추가하는 함수
+     * @param data
+     * @return
+     */
     public List<CommandVO> requestCommand(List<PoseVO> data) {
 
         List<CommandVO> commandVOS = new ArrayList<>();
 
         int []test = new int[]{11,12,13,14,15,16,23,24,25,26,27,28};
-        // 19 20 손   // 31 32 발
-        // 13 14 팔꿈 // 25 26 무릎
+
         for(PoseVO poseVO : data){
             CommandVO commandVO = new CommandVO();
             commandVO.setTimeStamp(poseVO.getTimeStamp());
+            commandVO.setPoseWorldLandmarks(poseVO.getPoseWorldLandmarks());
 
             List<String> command = new ArrayList<>();
             for(int i = 0 ; i < 33 ; i ++){
+
+                if(poseVO.getPoseWorldLandmarks().isEmpty()){
+                    continue;
+                }
+
                 PoseKeyPoint poseKeyPoint = poseVO.getPoseWorldLandmarks().get(i);
                 if(poseKeyPoint.getX() == 0){
                     continue;
@@ -507,18 +528,20 @@ public class PoseService {
                         }else{
                             sb.append("오른쪽 ");
                         }
-                    }else if(Max == Math.abs(poseKeyPoint.getY())){
+                    }
+
+                    if(Max == Math.abs(poseKeyPoint.getY())){
                         if(Math.abs(poseKeyPoint.getY()) > 0){
-                            sb.append("위로 ");
-                        }else{
                             sb.append("아래로 ");
+                        }else{
+                            sb.append("위로 ");
                         }
 
                     }else {
                         if(Math.abs(poseKeyPoint.getZ()) > 0){
-                            sb.append("뒤로 ");
-                        }else{
                             sb.append("앞으로 ");
+                        }else{
+                            sb.append("뒤로 ");
                         }
                     }
 
@@ -533,4 +556,8 @@ public class PoseService {
 
         return commandVOS;
     }
+
+
+
 }
+

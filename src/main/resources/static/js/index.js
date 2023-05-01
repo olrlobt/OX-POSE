@@ -7,13 +7,14 @@ const compare_input_video = document.getElementById("compare_input_video");
 const analyze_btn = document.getElementById("analyze_btn");
 const analyzeCurrent_btn = document.getElementById("analyzeCurrent_btn");
 const analyzeAll_btn = document.getElementById("analyzeAll_btn");
+const analyze_correct_btn = document.getElementById("analyze_correct_btn");
 const isCanvas = document.getElementById("isCanvas");
 const is3DGrid = document.getElementById("is3DGrid");
 
 const play_duration = document.querySelector('.play-bar');
 
 // keyPoint 구분
-const leftIndices = [1, 2, 3, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31];
+const leftIndices = [1, 2, 3, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31 ];
 const rightIndices = [4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32];
 const leftConnections = [
     [11, 13], [13, 15], [15, 21], [15, 17], [15, 19], [17, 19],
@@ -27,8 +28,24 @@ const centerConnections = [
     [11, 12], [23, 24]
 ];
 
+const tempIndices = [
+    44, 46, 48,  56, 58, 60,
+    45, 47, 49,  57, 59, 61
+];
+const tempConnentions = [
+    [44, 46], [46, 48],
+    [56, 58], [58, 60],
+
+    [45, 47], [47, 49],
+    [57, 59], [59, 61],
+]
+
+
+
+
 let camera;
 
+let correctResult = [];
 let compareResult = [];
 let userResult = [];
 let command= [];
@@ -124,8 +141,8 @@ async function Analyze(part, poseModel) {
     };
     show_video.addEventListener('play', () =>{
             const intervalID = setInterval(() => {
-                drawSkeleton(getTimeStampAnalyze(show_video.currentTime, part), canvasCtx, grid);
-                document.querySelector(".result_box").innerHTML = getTimeStampCommand(show_video.currentTime);
+                drawSkeleton(getTimeStampAnalyze(show_video.currentTime, part), canvasCtx, grid, getTimeStampCommand(show_video.currentTime, part));
+
             }, 100);
 
             show_video.addEventListener('pause' ,function () {
@@ -240,6 +257,8 @@ async function Analyze(part, poseModel) {
         const jsonData = JSON.stringify({
             data : analyze_data,
         });
+
+        console.log(analyze_data);
         $.ajax({
             type: 'POST',
             url: 'setAnalyzePose',
@@ -311,8 +330,9 @@ function createVideoElement(video_box, srcURL) {
  * @param canvasCtx - 2D 캔버스
  * @param grid - 3D 캔버스
  */
-function drawSkeleton(results, canvasCtx, grid) {
+function drawSkeleton(results, canvasCtx, grid, correctiveResult) {
     // console.log(results);
+    //document.querySelector(".result_box").innerHTML = getTimeStampCommand(show_video.currentTime);
     if (results.poseLandmarks && isCanvas.checked) {
         let leftKeyPoint = [];
         let rightKeyPoint = [];
@@ -346,18 +366,51 @@ function drawSkeleton(results, canvasCtx, grid) {
         canvasCtx.restore();
 
     }
-    if (results.poseWorldLandmarks && is3DGrid.checked) {
-        grid.updateLandmarks(results.poseWorldLandmarks, [
+    if(correctiveResult && correctiveResult != -1 && correctiveResult.poseWorldLandmarks.length != 0){
+
+        let temp = [];
+        // for(let i = 0 ; i < results.poseWorldLandmarks.length; i ++ ){
+        //     temp.push(results.poseWorldLandmarks[i]);
+        // }
+        for(let i = 0 ; i < correctiveResult.poseWorldLandmarks.length; i ++){
+            temp.push({x : correctiveResult.poseWorldLandmarks[i].x + results.poseWorldLandmarks[i].x ,
+                y : correctiveResult.poseWorldLandmarks[i].y + results.poseWorldLandmarks[i].y,
+                z : correctiveResult.poseWorldLandmarks[i].z + results.poseWorldLandmarks[i].z,
+                visibility : results.poseWorldLandmarks.visibility
+            });
+        }
+
+        console.log("//");
+        grid.updateLandmarks(results.poseWorldLandmarks.concat(temp), [
                 {list: leftConnections, color: 'LEFTCONNECTIONS'},
                 {list: rightConnections, color: 'RIGHTCONNECTIONS'},
-                {list: centerConnections, color: '0xEEEEEE'}]
+                {list: centerConnections, color: '0xEEEEEE'},
+                {list: tempConnentions, color: 'LEFTCORRECTIVECONNECTIONS'},
+            ]
             , [
                 {list: leftIndices, color: 'LEFT'},
-                {list: rightIndices, color: 'RIGHT'}
+                {list: rightIndices, color: 'RIGHT'},
+                {list: tempIndices, color: 'LEFTCORRECTIVECONNECTIONS'},
             ]);
 
-    } else {
-        grid.updateLandmarks([]);
+    }else{
+        console.log("//");
+        if (results.poseWorldLandmarks && is3DGrid.checked) {
+
+            grid.updateLandmarks(results.poseWorldLandmarks, [
+                    {list: leftConnections, color: 'LEFTCONNECTIONS'},
+                    {list: rightConnections, color: 'RIGHTCONNECTIONS'},
+                    {list: centerConnections, color: '0xEEEEEE'}
+                ]
+                , [
+                    {list: leftIndices, color: 'LEFT'},
+                    {list: rightIndices, color: 'RIGHT'}
+                ]);
+
+        }else {
+            grid.updateLandmarks([]);
+        }
+
     }
 }
 
@@ -398,8 +451,6 @@ analyze_btn.addEventListener("click", function (){
     const compareData = compareResult.slice(compareStartFrame, compareStartFrame + frameLength);
     const userData = userResult.slice(userStartFrame, userStartFrame + frameLength);
 
-
-
     fetch("requestComparePose", {
         method : "POST",
         headers: {
@@ -408,11 +459,25 @@ analyze_btn.addEventListener("click", function (){
         body : JSON.stringify([userData,compareData])
     }).then(response => response.json())
         .then(data => {
-            console.log(data);
+            // console.log(data);
             // 이 데이터의 좌표 차이를 이용해서 분석 결과를 저장하고, 시간대에 따라 출력;
             command = data;
 
         }).catch(error => console.error(error));
+
+
+    //
+    // fetch("requestCorrectivePose", {
+    //     method : "POST",
+    //     headers: {
+    //         "Content-Type": "application/json"
+    //     },
+    //     body : JSON.stringify([userData,compareData])
+    // }).then(response => response.json())
+    //     .then(data => {
+    //         console.log(data);
+    //
+    //     }).catch(error => console.error(error));
 });
 
 
@@ -509,7 +574,11 @@ function getTimeStampAnalyze(timeStamp, part){
 
 
 
-function getTimeStampCommand(timeStamp){
+function getTimeStampCommand(timeStamp, part){
+
+    if(part != "user"){
+        return -1;
+    }
 
     if(command){
         let start = 0;
@@ -519,7 +588,7 @@ function getTimeStampCommand(timeStamp){
         while (start <= end) {
             let mid = Math.floor((start + end) / 2);
             if (command[mid].timeStamp < timeStamp) {
-                result = command[mid].command;
+                result = command[mid];
                 start = mid + 1;
             } else {
                 end = mid - 1;
@@ -528,6 +597,9 @@ function getTimeStampCommand(timeStamp){
         return result;
     }
 }
+
+
+
 
 
 
@@ -585,11 +657,15 @@ comparePose.setOptions(poseOptions);
 const gridOption = {
     connectionColor: 0xCCCCCC,
     definedColors: [
+
+        {name: 'LEFTCORRECTIVE', value: 0xB0C9FA},
+        {name: 'RIGHTCORRECTIVE', value: 0xB0C9FA},
+        {name: 'LEFTCORRECTIVECONNECTIONS', value: 0xB0C9FA},
+        {name: 'RIGHTCORRECTIVECONNECTIONS', value: 0xB0C9FA},
         {name: 'LEFT', value: 0xFF0000},
         {name: 'RIGHT', value: 0x0000FF},
         {name: 'LEFTCONNECTIONS', value: 0x75fbfd},
         {name: 'RIGHTCONNECTIONS', value: 0x00FFAA}],
-
     range: 1,
     fitToGrid: true,
     labelSuffix: 'm',

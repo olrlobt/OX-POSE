@@ -91,9 +91,11 @@ public class PoseController {
 	public List<CommandVO> requestComparePose(@RequestBody List<List<PoseVO>> poseVOs){
 
 		List<PoseVO> data = poseService.requestComparePose(poseVOs);
-		return poseService.requestCommand(data);
 
+
+		return poseService.requestCommand(data);
 	}
+
 
 
 }

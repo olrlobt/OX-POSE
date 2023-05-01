@@ -4,9 +4,7 @@ import java.util.List;
 import lombok.Data;
 
 @Data
-public class CommandVO {
+public class CommandVO extends PoseVO {
 
-    private double timeStamp;
     private List<String> command;
-
 }
