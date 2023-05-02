@@ -29,15 +29,16 @@ const centerConnections = [
 ];
 
 const tempIndices = [
-    44, 46, 48,  56, 58, 60,
-    45, 47, 49,  57, 59, 61
+    35,36,37,38,
+    41,42,43,44
+
 ];
 const tempConnentions = [
-    [44, 46], [46, 48],
-    [56, 58], [58, 60],
+    [11, 35], [35, 37],
+    [12, 36], [36, 38],
 
-    [45, 47], [47, 49],
-    [57, 59], [59, 61],
+    [23, 41], [41, 43],
+    [24, 42], [42, 44],
 ]
 
 
@@ -368,19 +369,23 @@ function drawSkeleton(results, canvasCtx, grid, correctiveResult) {
     }
     if(correctiveResult && correctiveResult != -1 && correctiveResult.poseWorldLandmarks.length != 0){
 
+        let armleg = [44,45,46,47,48,49 , 56,57,58,59,60,61];
         let temp = [];
         // for(let i = 0 ; i < results.poseWorldLandmarks.length; i ++ ){
         //     temp.push(results.poseWorldLandmarks[i]);
         // }
         for(let i = 0 ; i < correctiveResult.poseWorldLandmarks.length; i ++){
-            temp.push({x : correctiveResult.poseWorldLandmarks[i].x + results.poseWorldLandmarks[i].x ,
-                y : correctiveResult.poseWorldLandmarks[i].y + results.poseWorldLandmarks[i].y,
-                z : correctiveResult.poseWorldLandmarks[i].z + results.poseWorldLandmarks[i].z,
-                visibility : results.poseWorldLandmarks.visibility
-            });
+            if(armleg.includes(i+33)){
+                temp.push({x : correctiveResult.poseWorldLandmarks[i].x + results.poseWorldLandmarks[i].x ,
+                    y : correctiveResult.poseWorldLandmarks[i].y + results.poseWorldLandmarks[i].y,
+                    z : correctiveResult.poseWorldLandmarks[i].z + results.poseWorldLandmarks[i].z,
+                    visibility : results.poseWorldLandmarks.visibility
+                });
+            }
         }
 
         console.log("//");
+        console.log(results.poseWorldLandmarks.concat(temp));
         grid.updateLandmarks(results.poseWorldLandmarks.concat(temp), [
                 {list: leftConnections, color: 'LEFTCONNECTIONS'},
                 {list: rightConnections, color: 'RIGHTCONNECTIONS'},
