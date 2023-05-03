@@ -93,7 +93,9 @@ public class PoseController {
 		List<PoseVO> data = poseService.requestComparePose(poseVOs);
 
 
-		return poseService.requestCommand(data);
+		poseService.requestCorrectivePoseLandmarks(poseVOs, data);
+		List<CommandVO> result = poseService.requestCommand(data);
+		return result;
 	}
 
 

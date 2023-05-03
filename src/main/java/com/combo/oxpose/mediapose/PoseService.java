@@ -504,7 +504,7 @@ public class PoseService {
             CommandVO commandVO = new CommandVO();
             commandVO.setTimeStamp(poseVO.getTimeStamp());
             commandVO.setPoseWorldLandmarks(poseVO.getPoseWorldLandmarks());
-
+            commandVO.setPoseLandmarks(poseVO.getPoseLandmarks());
             List<String> command = new ArrayList<>();
             for(int i = 0 ; i < 33 ; i ++){
 
@@ -557,7 +557,57 @@ public class PoseService {
         return commandVOS;
     }
 
+    public void requestCorrectivePoseLandmarks(List<List<PoseVO>> poseVOs, List<PoseVO> data) {
+        List<PoseVO> userPoseData = poseVOs.get(0);
+        List<PoseVO> comparePoseData = poseVOs.get(1);
 
+        log.info("size = {} datas = {}",comparePoseData.size() , data.size());
+
+        for(int i = 0 ; i < userPoseData.size(); i ++){
+
+            ArrayList<PoseKeyPoint> landmarks = userPoseData.get(i).getPoseLandmarks();
+            ArrayList<PoseKeyPoint> worldLandmarks = userPoseData.get(i).getPoseWorldLandmarks();
+            ArrayList<PoseKeyPoint> compareWorldLandmarks = comparePoseData.get(i).getPoseWorldLandmarks();
+            double XLandIncreased = landmarks.get(11).getX() - landmarks.get(12).getX() ;
+            double XWorldIncreased = worldLandmarks.get(11).getX() - worldLandmarks.get(12).getX() ;
+
+            double XIncreased = XWorldIncreased / XLandIncreased;
+
+            double YLandIncreased = landmarks.get(11).getY() - landmarks.get(23).getY() ;
+            double YWorldIncreased = worldLandmarks.get(11).getY() - worldLandmarks.get(23).getY() ;
+
+            double YIncreased = YWorldIncreased / YLandIncreased;
+
+            double ZLandIncreased = landmarks.get(11).getZ() - landmarks.get(23).getZ() ;
+            double ZWorldIncreased = worldLandmarks.get(11).getZ() - worldLandmarks.get(23).getZ() ;
+
+            double ZIncreased = ZWorldIncreased / ZLandIncreased;
+
+            //11 을 기준으로 // data world com - world user
+            // 11 13 15 12 14 16 / 23 25 27 24 26 28
+
+            int [] legarm = new int[]{11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28};
+            ArrayList<PoseKeyPoint> pkList = new ArrayList<>();
+
+            for(int j : legarm){
+
+                PoseKeyPoint pk = new PoseKeyPoint();
+                double X13WorldGap = compareWorldLandmarks.get(j).getX() - worldLandmarks.get(11).getX();
+                double Y13WorldGap = compareWorldLandmarks.get(j).getY() - worldLandmarks.get(11).getY();
+                double Z13WorldGap = compareWorldLandmarks.get(j).getZ() - worldLandmarks.get(11).getZ();
+                pk.setX(X13WorldGap / XIncreased + landmarks.get(11).getX());
+                pk.setY(Y13WorldGap / YIncreased + landmarks.get(11).getY());
+                pk.setZ(Z13WorldGap / ZIncreased + landmarks.get(11).getZ());
+                pk.setVisibility(0.9);
+
+                pkList.add(pk);
+            }
+
+            data.get(i).setPoseLandmarks(pkList);
+        }
+
+    }
+    
 
 }
 

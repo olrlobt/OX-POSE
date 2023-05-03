@@ -273,7 +273,6 @@ async function Analyze(part, poseModel) {
                 }else{
                     compareResult = data;
                 }
-                console.log(data);
             }
         })
     }
@@ -332,11 +331,14 @@ function createVideoElement(video_box, srcURL) {
  * @param grid - 3D 캔버스
  */
 function drawSkeleton(results, canvasCtx, grid, correctiveResult) {
-    // console.log(results);
+    console.log(results);
+    console.log(correctiveResult);
     //document.querySelector(".result_box").innerHTML = getTimeStampCommand(show_video.currentTime);
     if (results.poseLandmarks && isCanvas.checked) {
         let leftKeyPoint = [];
         let rightKeyPoint = [];
+        let leftCorrectKeyPoint = [];
+        let rightCorrectKeyPoint = [];
 
         for (let i = 0; i < results.poseLandmarks.length; i++) {
             if (leftIndices.includes(i)) {
@@ -345,6 +347,19 @@ function drawSkeleton(results, canvasCtx, grid, correctiveResult) {
                 rightKeyPoint.push(results.poseLandmarks[i]);
             }
         }
+
+        if(correctiveResult && correctiveResult != -1  && correctiveResult.poseLandmarks.length != 0){
+
+            for (let i = 0; i < correctiveResult.poseLandmarks.length; i++) {
+                if (i%2 == 0) {
+                    leftCorrectKeyPoint.push(correctiveResult.poseLandmarks[i]);
+                } else {
+                    rightCorrectKeyPoint.push(correctiveResult.poseLandmarks[i]);
+                }
+            }
+        }
+
+
         canvasCtx.save();
         canvasCtx.clearRect(0, 0, canvasCtx.canvas.width, canvasCtx.canvas.height);
         // canvasCtx.drawImage(results.image, 0, 0, canvasCtx.canvas.width, canvasCtx.canvas.height);
@@ -354,6 +369,12 @@ function drawSkeleton(results, canvasCtx, grid, correctiveResult) {
         });
         drawLandmarks(canvasCtx, rightKeyPoint, {
             color: '#0000FF', lineWidth: 2
+        });
+        drawLandmarks(canvasCtx, leftCorrectKeyPoint, {
+            color: '#FF00FF', lineWidth: 2
+        });
+        drawLandmarks(canvasCtx, rightCorrectKeyPoint, {
+            color: '#FFFFFF', lineWidth: 2
         });
         drawConnectors(canvasCtx, results.poseLandmarks, leftConnections, {
             color: '#00FFFF', lineWidth: 3
@@ -384,8 +405,8 @@ function drawSkeleton(results, canvasCtx, grid, correctiveResult) {
             }
         }
 
-        console.log("//");
-        console.log(results.poseWorldLandmarks.concat(temp));
+        // console.log("//");
+        // console.log(results.poseWorldLandmarks.concat(temp));
         grid.updateLandmarks(results.poseWorldLandmarks.concat(temp), [
                 {list: leftConnections, color: 'LEFTCONNECTIONS'},
                 {list: rightConnections, color: 'RIGHTCONNECTIONS'},
@@ -399,7 +420,7 @@ function drawSkeleton(results, canvasCtx, grid, correctiveResult) {
             ]);
 
     }else{
-        console.log("//");
+        // console.log("//");
         if (results.poseWorldLandmarks && is3DGrid.checked) {
 
             grid.updateLandmarks(results.poseWorldLandmarks, [
@@ -464,7 +485,7 @@ analyze_btn.addEventListener("click", function (){
         body : JSON.stringify([userData,compareData])
     }).then(response => response.json())
         .then(data => {
-            // console.log(data);
+            console.log(data);
             // 이 데이터의 좌표 차이를 이용해서 분석 결과를 저장하고, 시간대에 따라 출력;
             command = data;
 
