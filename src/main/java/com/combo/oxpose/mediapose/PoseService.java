@@ -5,9 +5,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.math3.linear.MatrixUtils;
-import org.apache.commons.math3.linear.RealMatrix;
-import org.apache.commons.math3.linear.SingularValueDecomposition;
 import org.springframework.stereotype.Service;
 
 import com.combo.oxpose.mediapose.PoseVO.PoseKeyPoint;
@@ -561,24 +558,73 @@ public class PoseService {
         List<PoseVO> userPoseData = poseVOs.get(0);
         List<PoseVO> comparePoseData = poseVOs.get(1);
 
-        log.info("size = {} datas = {}",comparePoseData.size() , data.size());
 
         for(int i = 0 ; i < userPoseData.size(); i ++){
+            ArrayList<PoseKeyPoint> poseKeyPoints = userPoseData.get(i).getPoseLandmarks();
+            System.out.println();
+            System.out.println();
+            log.info("=== 구분선 === " );
 
-            ArrayList<PoseKeyPoint> landmarks = userPoseData.get(i).getPoseLandmarks();
+            double[] shoulderCenter = {
+                    (poseKeyPoints.get(11).getX() + poseKeyPoints.get(12).getX()) / 2,
+                    (poseKeyPoints.get(11).getY() + poseKeyPoints.get(12).getY() ) / 2,
+                    (poseKeyPoints.get(11).getZ() + poseKeyPoints.get(12).getZ() ) / 2};
+            double[] hipCenter = {
+                    (poseKeyPoints.get(23).getX() + poseKeyPoints.get(24).getX()) / 2,
+                    (poseKeyPoints.get(23).getY() + poseKeyPoints.get(24).getY() ) / 2,
+                    (poseKeyPoints.get(23).getZ() + poseKeyPoints.get(24).getZ() ) / 2};
+            double[] leftSideCenter = {
+                    (poseKeyPoints.get(11).getX() + poseKeyPoints.get(23).getX()) / 2,
+                    (poseKeyPoints.get(11).getY() + poseKeyPoints.get(23).getY() ) / 2,
+                    (poseKeyPoints.get(11).getZ() + poseKeyPoints.get(23).getZ() ) / 2};
+
+            double[] rightSideCenter = {
+                    (poseKeyPoints.get(12).getX() + poseKeyPoints.get(24).getX()) / 2,
+                    (poseKeyPoints.get(12).getY() + poseKeyPoints.get(24).getY()) / 2,
+                    (poseKeyPoints.get(12).getZ() + poseKeyPoints.get(24).getZ()) / 2};
+
+            // 어깨 중앙선과 엉덩이 중앙선을 기준으로 하는 새로운 Y축을 계산합니다.
+            double[] yAxis = {hipCenter[0] - shoulderCenter[0], hipCenter[1] - shoulderCenter[1],
+                    hipCenter[2] - shoulderCenter[2]};
+            yAxis = normalize(yAxis);
+
+            double[] leftToRight = {rightSideCenter[0] - leftSideCenter[0], rightSideCenter[1] - leftSideCenter[1],
+                    rightSideCenter[2] - leftSideCenter[2]};
+            double[] zAxis = crossProduct(leftToRight, yAxis);
+            zAxis = normalize(zAxis);
+
+            double[] xAxis = crossProduct(yAxis, zAxis);
+            xAxis = normalize(xAxis);
+
+
+            for (PoseKeyPoint keyPoint : poseKeyPoints) {
+                double[] point = {keyPoint.getX(),
+                        keyPoint.getY(), keyPoint.getZ()};
+
+                keyPoint.setX(dotProduct(xAxis, point));
+                keyPoint.setY(dotProduct(yAxis, point));
+                keyPoint.setZ(dotProduct(zAxis, point));
+            }
+
+            log.info("변환된 11 = {} 12 = {} 13 = {} , " ,poseKeyPoints.get(11), poseKeyPoints.get(12), poseKeyPoints.get(13));
+            log.info("변환된 23 = {} 25 = {} 27 = {} , " ,poseKeyPoints.get(23),poseKeyPoints.get(25), poseKeyPoints.get(27));
+
+
+
             ArrayList<PoseKeyPoint> worldLandmarks = userPoseData.get(i).getPoseWorldLandmarks();
+
             ArrayList<PoseKeyPoint> compareWorldLandmarks = comparePoseData.get(i).getPoseWorldLandmarks();
-            double XLandIncreased = landmarks.get(11).getX() - landmarks.get(12).getX() ;
+            double XLandIncreased = poseKeyPoints.get(11).getX() - poseKeyPoints.get(12).getX() ;
             double XWorldIncreased = worldLandmarks.get(11).getX() - worldLandmarks.get(12).getX() ;
 
             double XIncreased = XWorldIncreased / XLandIncreased;
 
-            double YLandIncreased = landmarks.get(11).getY() - landmarks.get(23).getY() ;
+            double YLandIncreased = poseKeyPoints.get(11).getY() - poseKeyPoints.get(23).getY() ;
             double YWorldIncreased = worldLandmarks.get(11).getY() - worldLandmarks.get(23).getY() ;
 
             double YIncreased = YWorldIncreased / YLandIncreased;
 
-            double ZLandIncreased = landmarks.get(11).getZ() - landmarks.get(23).getZ() ;
+            double ZLandIncreased = poseKeyPoints.get(11).getZ() - poseKeyPoints.get(23).getZ() ;
             double ZWorldIncreased = worldLandmarks.get(11).getZ() - worldLandmarks.get(23).getZ() ;
 
             double ZIncreased = ZWorldIncreased / ZLandIncreased;
@@ -595,19 +641,83 @@ public class PoseService {
                 double X13WorldGap = compareWorldLandmarks.get(j).getX() - worldLandmarks.get(11).getX();
                 double Y13WorldGap = compareWorldLandmarks.get(j).getY() - worldLandmarks.get(11).getY();
                 double Z13WorldGap = compareWorldLandmarks.get(j).getZ() - worldLandmarks.get(11).getZ();
-                pk.setX(X13WorldGap / XIncreased + landmarks.get(11).getX());
-                pk.setY(Y13WorldGap / YIncreased + landmarks.get(11).getY());
-                pk.setZ(Z13WorldGap / ZIncreased + landmarks.get(11).getZ());
+                pk.setX(X13WorldGap / XIncreased + poseKeyPoints.get(11).getX());
+                pk.setY(Y13WorldGap / YIncreased + poseKeyPoints.get(11).getY());
+                pk.setZ(Z13WorldGap / ZIncreased + poseKeyPoints.get(11).getZ());
                 pk.setVisibility(0.9);
 
                 pkList.add(pk);
             }
 
+            log.info("복구전 pkList = {} , " , pkList);
+
+            /**
+             *  복구 부분
+             */
+            // 복구
+
+            double[][] M = {
+                    {xAxis[0], yAxis[0], zAxis[0]},
+                    {xAxis[1], yAxis[1], zAxis[1]},
+                    {xAxis[2], yAxis[2], zAxis[2]}
+            };
+
+
+            for (PoseKeyPoint keyPoint : poseKeyPoints) {
+                double[] point = {keyPoint.getX(),
+                        keyPoint.getY(), keyPoint.getZ()};
+
+                double[] P = matrixMultiply(M, point);
+
+                keyPoint.setX(P[0]);
+                keyPoint.setY(P[1]);
+                keyPoint.setZ(P[2]);
+            }
+
+            for (PoseKeyPoint keyPoint : pkList) {
+                double[] point = {keyPoint.getX(),
+                        keyPoint.getY(), keyPoint.getZ()};
+
+                double[] P = matrixMultiply(M, point);
+
+                keyPoint.setX(P[0]);
+                keyPoint.setY(P[1]);
+                keyPoint.setZ(P[2]);
+            }
+            System.out.println();
+
+            log.info("복구된 11 = {} 12 = {} 13 = {} , " , poseKeyPoints.get(11),  poseKeyPoints.get(12), poseKeyPoints.get(13));
+            log.info("복구된 23 = {} 25 = {} 27 = {} , " ,poseKeyPoints.get(23), poseKeyPoints.get(25), poseKeyPoints.get(27));
+            log.info("복구된 pkList = {} , " , pkList);
+
             data.get(i).setPoseLandmarks(pkList);
         }
 
+
     }
-    
+
+
+    public static double[] matrixMultiply(double[][] matrixA, double[] matrixB) {
+        int rowsA = matrixA.length;
+        int colsA = matrixA[0].length;
+        int rowsB = matrixB.length;
+
+        if (colsA != rowsB) {
+            throw new IllegalArgumentException("The number of columns in matrix A must be equal to the number of rows in matrix B.");
+        }
+
+        double[] result = new double[rowsA];
+
+        for (int i = 0; i < rowsA; i++) {
+            double sum = 0;
+            for (int j = 0; j < colsA; j++) {
+                sum += matrixA[i][j] * matrixB[j];
+            }
+            result[i] = sum;
+        }
+
+        return result;
+    }
 
 }
 
