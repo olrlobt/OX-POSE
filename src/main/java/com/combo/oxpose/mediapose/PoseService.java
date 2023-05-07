@@ -30,17 +30,14 @@ public class PoseService {
         int frame = 0;
 
         List<Map<String, Object>> poseList = (List<Map<String, Object>>) data.get("data");
-        log.info("size = {}", poseList.size());
 
         List<PoseVO> poseData = new ArrayList<>();
         for (Map<String, Object> pose : poseList) {
-            List<Map<String, Double>> poseWorldLandmarksData = (List<Map<String, Double>>) pose.get(
-                    "poseWorldLandmarks");
+            List<Map<String, Double>> poseWorldLandmarksData = (List<Map<String, Double>>) pose.get("poseWorldLandmarks");
             List<Map<String, Double>> poseLandmarksData = (List<Map<String, Double>>) pose.get("poseLandmarks");
             double timestamp = Double.parseDouble(pose.get("timestamp").toString());
 
             if (timestamp < 0.0) {
-                log.info("time return");
                 continue;
             }
 
@@ -99,7 +96,7 @@ public class PoseService {
     /**
      * 부족한 프레임을 보충하는 함수
      */
-    public void addMidAnalyze(List<PoseVO> poseData , PoseVO poseVO,int frame) {
+    public void addMidAnalyze(List<PoseVO> poseData , PoseVO poseVO, int frame) {
 
         if (!poseData.isEmpty()) {
             PoseVO previousPoseVO = poseData.get(poseData.size() - 1);
@@ -174,7 +171,6 @@ public class PoseService {
      */
     public void normalizeData(List<Map<String, Double>> data) {
 
-        // 어깨 중앙선과 엉덩이 중앙선을 구합니다.
         double[] shoulderCenter = {
                 (data.get(11).get("x") + data.get(12).get("x")) / 2,
                 (data.get(11).get("y") + data.get(12).get("y")) / 2,
@@ -183,8 +179,6 @@ public class PoseService {
                 (data.get(23).get("x") + data.get(24).get("x")) / 2,
                 (data.get(23).get("y") + data.get(24).get("y")) / 2,
                 (data.get(23).get("z") + data.get(24).get("z")) / 2};
-
-        // 옆구리 중앙선을 구합니다.
         double[] leftSideCenter = {
                 (data.get(11).get("x") + data.get(23).get("x")) / 2,
                 (data.get(11).get("y") + data.get(23).get("y")) / 2,
@@ -194,7 +188,6 @@ public class PoseService {
                 (data.get(12).get("y") + data.get(24).get("y")) / 2,
                 (data.get(12).get("z") + data.get(24).get("z")) / 2};
 
-        // 어깨 중앙선과 엉덩이 중앙선을 기준으로 하는 새로운 Y축을 계산합니다.
         double[] yAxis = {hipCenter[0] - shoulderCenter[0], hipCenter[1] - shoulderCenter[1],
                 hipCenter[2] - shoulderCenter[2]};
         yAxis = normalize(yAxis);
@@ -237,6 +230,8 @@ public class PoseService {
 
     /**
      * 벡터의 내적
+     *
+     * @return 벡터 v1,v2의 내적
      */
     public static double dotProduct(double[] v1, double[] v2) {
         double dotProduct = 0;
@@ -248,9 +243,9 @@ public class PoseService {
     }
 
     /**
-     * 벡터의 외적
+     * 벡터의 외적 (두 벡터에 수직인 벡터)
      *
-     * @return : 벡터 v1,v2와 수직인 벡터
+     * @return : 벡터 v1,v2 외적
      */
     public static double[] crossProduct(double[] v1, double[] v2) {
         double[] verticalVector = new double[3];
@@ -310,11 +305,6 @@ public class PoseService {
      *
      * @return 벡터 크기
      */
-    public double vectorSize(PoseKeyPoint poseKeyPoint) {
-        return Math.sqrt(
-                Math.pow(poseKeyPoint.getX(), 2) + Math.pow(poseKeyPoint.getY(), 2) + Math.pow(poseKeyPoint.getZ(), 2));
-    }
-
     public double vectorSize(double[] vector) {
         return Math.sqrt(Math.pow(vector[0], 2) + Math.pow(vector[1], 2) + Math.pow(vector[2], 2));
     }
@@ -322,15 +312,14 @@ public class PoseService {
 
     /**
      * 분석이 끝난 비디오를 제거하는 함수
-     * @param src
      */
     public void removeVideo(String src) {
 
         File file = new File(src.replace("http://localhost", "src/main/webapp"));
         if (file.delete()) {
-            log.info("삭제 성공 !");
+            log.debug("삭제 성공");
         } else {
-            log.info("삭제 실패 ! = {}", file);
+            log.debug("삭제 실패 : {}", file);
         }
     }
 
@@ -384,8 +373,7 @@ public class PoseService {
     }
 
     /**
-     * 분석하기 버튼으로, 비교영상의 현재 자세와, 사용자 영상의
-     * @param
+     * 현재 비디오 영상의 자세를 분석하여 출력
      */
     public void matchCurrentPose(List<PoseVO> poseVOs){
         PoseVO poseVO1 = poseVOs.get(0);
@@ -401,7 +389,6 @@ public class PoseService {
     /**
      * 현재 사용자 영상과 비교 영상의 가중치거리를 측정하는 함수
      *
-     * @return
      */
     public List<PoseVO> matchAllPose(List<List<PoseVO>> poseVOs){
         List<PoseVO> userPoseData = poseVOs.get(0);
@@ -412,7 +399,6 @@ public class PoseService {
         int max = 0;
         int maxI = 0;
         int maxJ = 0;
-        List<PoseVO> result = new ArrayList<>();
 
         for(int i = 1 ;  i <= userPoseData.size(); i++){
             for(int j = 1 ;  j <= comparePoseData.size(); j++){
@@ -431,20 +417,20 @@ public class PoseService {
         }
 
         for(int i = 0 ;  i < userPoseData.size(); i++){
-            log.info("distance = {}" , Arrays.toString(weightedDistance[i]));
+            log.debug("distance = {}" , Arrays.toString(weightedDistance[i]));
         }
 
-        log.info("max = {}  i = {}   j = {} " , max, maxI, maxJ);
-        log.info("start userFrame = {}   start compareFrame = {} " ,  maxI - max, maxJ - max);
-        log.info("LastUserTime = {}   LastCompareTime = {} " ,  poseVOs.get(0).get(maxI).getTimeStamp(), poseVOs.get(1).get(maxJ).getTimeStamp());
-        log.info("start userTime = {}   start compareTime = {} " ,  poseVOs.get(0).get(maxI - max).getTimeStamp(), poseVOs.get(1).get(maxJ - max).getTimeStamp());
+        log.debug("max = {}  i = {}   j = {} " , max, maxI, maxJ);
+        log.debug("start userFrame = {}   start compareFrame = {} " ,  maxI - max, maxJ - max);
+        log.debug("LastUserTime = {}   LastCompareTime = {} " ,  poseVOs.get(0).get(maxI).getTimeStamp(), poseVOs.get(1).get(maxJ).getTimeStamp());
+        log.debug("start userTime = {}   start compareTime = {} " ,  poseVOs.get(0).get(maxI - max).getTimeStamp(), poseVOs.get(1).get(maxJ - max).getTimeStamp());
         return Arrays.asList(poseVOs.get(0).get(maxI - max) , poseVOs.get(1).get(maxJ - max));
     }
 
     /**
-     * 비슷하지 않은 포즈를 선별하는 함수
-     * @param poseVOs
-     * @return
+     * 가중치 자세가 기준치를 넘치 못하면, 자세의 차이를 저장하는 함수
+     * @param poseVOs  poseVOs.get(0) : user , poseVOs.get(1) : compare
+     * @return 3D grid 차이
      */
     public List<PoseVO> requestComparePose(List<List<PoseVO>> poseVOs){
         List<PoseVO> userPoseData = poseVOs.get(0);
@@ -452,16 +438,14 @@ public class PoseService {
         List<PoseVO> result = new ArrayList<>();
 
         for(int i = 0; i < userPoseData.size(); i ++){
-
             PoseVO userPose = userPoseData.get(i);
             PoseVO comparePose = comparePoseData.get(i);
             PoseVO resultPose = new PoseVO();
-
             resultPose.setTimeStamp(comparePose.getTimeStamp());
 
             ArrayList<PoseKeyPoint> resultWorldLandmarks = new ArrayList<>();
-            for(int j = 0 ; j < 33; j ++){
 
+            for(int j = 0 ; j < 33; j ++){
                 if(weightedDistanceMatching(userPose, comparePose) < 0.2){
                     break;
                 }
@@ -470,26 +454,22 @@ public class PoseService {
                 PoseKeyPoint comparePoseKey = comparePose.getPoseWorldLandmarks().get(j);
 
                 PoseKeyPoint resultPoseKey = new PoseKeyPoint();
-
                 resultPoseKey.setX(comparePoseKey.getX() - userPoseKey.getX());
                 resultPoseKey.setY(comparePoseKey.getY() - userPoseKey.getY());
                 resultPoseKey.setZ(comparePoseKey.getZ() - userPoseKey.getZ());
-
                 resultWorldLandmarks.add(resultPoseKey);
-
             }
             resultPose.setPoseWorldLandmarks(resultWorldLandmarks);
             result.add(resultPose);
         }
-
         return result;
     }
 
 
     /**
-     * data에 따라 command를 추가하는 함수
-     * @param data
-     * @return
+     * data에 따라 코멘트를 추가하는 함수
+     *
+     * @return 3D grid에 따른 자세 차이 코멘트
      */
     public List<CommandVO> requestCommand(List<PoseVO> data) {
 
@@ -554,6 +534,11 @@ public class PoseService {
         return commandVOS;
     }
 
+    /**
+     * 3D grid의 분석점 차이를 2D canvas 좌표로 변환하는 함수
+     * @param poseVOs
+     * @param data
+     */
     public void requestCorrectivePoseLandmarks(List<List<PoseVO>> poseVOs, List<PoseVO> data) {
         List<PoseVO> userPoseData = poseVOs.get(0);
         List<PoseVO> comparePoseData = poseVOs.get(1);
@@ -561,9 +546,6 @@ public class PoseService {
 
         for(int i = 0 ; i < userPoseData.size(); i ++){
             ArrayList<PoseKeyPoint> poseKeyPoints = userPoseData.get(i).getPoseLandmarks();
-            System.out.println();
-            System.out.println();
-            log.info("=== 구분선 === " );
 
             double[] shoulderCenter = {
                     (poseKeyPoints.get(11).getX() + poseKeyPoints.get(12).getX()) / 2,
@@ -583,7 +565,6 @@ public class PoseService {
                     (poseKeyPoints.get(12).getY() + poseKeyPoints.get(24).getY()) / 2,
                     (poseKeyPoints.get(12).getZ() + poseKeyPoints.get(24).getZ()) / 2};
 
-            // 어깨 중앙선과 엉덩이 중앙선을 기준으로 하는 새로운 Y축을 계산합니다.
             double[] yAxis = {hipCenter[0] - shoulderCenter[0], hipCenter[1] - shoulderCenter[1],
                     hipCenter[2] - shoulderCenter[2]};
             yAxis = normalize(yAxis);
@@ -606,10 +587,8 @@ public class PoseService {
                 keyPoint.setZ(dotProduct(zAxis, point));
             }
 
-            log.info("변환된 11 = {} 12 = {} 13 = {} , " ,poseKeyPoints.get(11), poseKeyPoints.get(12), poseKeyPoints.get(13));
-            log.info("변환된 23 = {} 25 = {} 27 = {} , " ,poseKeyPoints.get(23),poseKeyPoints.get(25), poseKeyPoints.get(27));
-
-
+            log.debug("변환된 11 = {} 12 = {} 13 = {} , " ,poseKeyPoints.get(11), poseKeyPoints.get(12), poseKeyPoints.get(13));
+            log.debug("변환된 23 = {} 25 = {} 27 = {} , " ,poseKeyPoints.get(23),poseKeyPoints.get(25), poseKeyPoints.get(27));
 
             ArrayList<PoseKeyPoint> worldLandmarks = userPoseData.get(i).getPoseWorldLandmarks();
 
@@ -629,8 +608,6 @@ public class PoseService {
 
             double ZIncreased = ZWorldIncreased / ZLandIncreased;
 
-            //11 을 기준으로 // data world com - world user
-            // 11 13 15 12 14 16 / 23 25 27 24 26 28
 
             int [] legarm = new int[]{11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28};
             ArrayList<PoseKeyPoint> pkList = new ArrayList<>();
@@ -649,19 +626,12 @@ public class PoseService {
                 pkList.add(pk);
             }
 
-            log.info("복구전 pkList = {} , " , pkList);
-
-            /**
-             *  복구 부분
-             */
-            // 복구
 
             double[][] M = {
                     {xAxis[0], yAxis[0], zAxis[0]},
                     {xAxis[1], yAxis[1], zAxis[1]},
                     {xAxis[2], yAxis[2], zAxis[2]}
             };
-
 
             for (PoseKeyPoint keyPoint : poseKeyPoints) {
                 double[] point = {keyPoint.getX(),
@@ -686,9 +656,9 @@ public class PoseService {
             }
             System.out.println();
 
-            log.info("복구된 11 = {} 12 = {} 13 = {} , " , poseKeyPoints.get(11),  poseKeyPoints.get(12), poseKeyPoints.get(13));
-            log.info("복구된 23 = {} 25 = {} 27 = {} , " ,poseKeyPoints.get(23), poseKeyPoints.get(25), poseKeyPoints.get(27));
-            log.info("복구된 pkList = {} , " , pkList);
+            log.debug("복구된 11 = {} 12 = {} 13 = {} , " , poseKeyPoints.get(11),  poseKeyPoints.get(12), poseKeyPoints.get(13));
+            log.debug("복구된 23 = {} 25 = {} 27 = {} , " ,poseKeyPoints.get(23), poseKeyPoints.get(25), poseKeyPoints.get(27));
+            log.debug("복구된 pkList = {} , " , pkList);
 
             data.get(i).setPoseLandmarks(pkList);
         }
@@ -696,7 +666,12 @@ public class PoseService {
 
     }
 
-
+    /**
+     * 행렬 곱셈
+     * @param matrixA
+     * @param matrixB
+     * @return
+     */
     public static double[] matrixMultiply(double[][] matrixA, double[] matrixB) {
         int rowsA = matrixA.length;
         int colsA = matrixA[0].length;
@@ -715,9 +690,6 @@ public class PoseService {
             }
             result[i] = sum;
         }
-
         return result;
     }
-
 }
-

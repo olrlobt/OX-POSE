@@ -533,7 +533,7 @@ label {
 							accept="video/mp4,video/mkv,video/x-m4,video/*">
 
 						<div class="back">
-							<div class="b09_electric" id = "modal_btn">샘플 영상 선택</div>
+							<div class="b09_electric modal_btn">샘플 영상 선택</div>
 						</div>
 					</div>
 					<div class="compare_video_box">
@@ -587,7 +587,7 @@ label {
 				</div>
 			</div>
 			<div class = "play-bar-box">
-				<span class="material-symbols-outlined" style="color: #5f89e6; cursor: pointer; margin: 1%;">play_arrow</span>
+				<span class="material-symbols-outlined play_btn" style="color: #5f89e6; cursor: pointer; margin: 1%;">play_arrow</span>
 				<div class="play-bar">
 					<div class="compare_play-bar"></div>
 					<div class="user_play-bar"></div>
@@ -657,9 +657,7 @@ label {
 			<div class="video_analyze_result">
 				<h3> 결과 </h3>
 				<div class="result_box">
-
-
-
+					<%--	결과 코멘트 출력부분	--%>
 				</div>
 
 			</div>
