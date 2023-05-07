@@ -1,4 +1,4 @@
-const video_ratio = document.getElementById("video_ratio");
+
 const user_input_video = document.getElementById("user_input_video");
 const user_video_btn = document.getElementById("user_video_btn");
 const user_live_button = document.getElementById("user_live_button");
@@ -7,7 +7,6 @@ const compare_input_video = document.getElementById("compare_input_video");
 const analyze_btn = document.getElementById("analyze_btn");
 const analyzeCurrent_btn = document.getElementById("analyzeCurrent_btn");
 const analyzeAll_btn = document.getElementById("analyzeAll_btn");
-const analyze_correct_btn = document.getElementById("analyze_correct_btn");
 const isCanvas = document.getElementById("isCanvas");
 const is3DGrid = document.getElementById("is3DGrid");
 
@@ -77,15 +76,6 @@ isCanvas.addEventListener("click",function (){
     }
 });
 
-
-// 비디오 크기를 조절하는 함수
-video_ratio.addEventListener("change", function () {
-    const video = document.getElementsByClassName("video");
-
-    for (let i = 0; i < video.length; i++) {
-        video[i].style.height = video[0].videoWidth * video_ratio.value + "px";
-    }
-});
 
 // 영상 선택 버튼 이벤트
 compare_video_btn.addEventListener("click", () => {
@@ -379,16 +369,16 @@ function drawSkeleton(results, canvasCtx, grid, correctiveResult) {
             color: '#0000FF', lineWidth: 2
         });
         drawLandmarks(canvasCtx, leftCorrectKeyPoint, {
-            color: '#FF00FF', lineWidth: 2
+            color: '#831c13', lineWidth: 2
         });
         drawLandmarks(canvasCtx, rightCorrectKeyPoint, {
-            color: '#FFFFFF', lineWidth: 2
+            color: '#00008f', lineWidth: 2
         });
         drawConnectors(canvasCtx, correctiveResult.poseLandmarks, tempLeftConnections, {
-            color: '#59a337', lineWidth: 3
+            color: '#449696', lineWidth: 3
         });
         drawConnectors(canvasCtx, correctiveResult.poseLandmarks, tempRightConnections, {
-            color: '#00cccc', lineWidth: 3
+            color: '#5bc33b', lineWidth: 3
         });
         drawConnectors(canvasCtx, results.poseLandmarks, leftConnections, {
             color: '#00FFFF', lineWidth: 3

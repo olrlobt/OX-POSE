@@ -466,6 +466,36 @@ label {
 	box-shadow: 0 0 0 max(4px, 0.2em) lightgray;
 }
 
+/* ### ### ### 09 */
+.b09_electric {
+	text-align: center;
+	color: #000000;
+	background-color: #c7ddf3;
+	border: #c7ddf3 solid 1px;
+
+	border-radius: 5px;
+	font-weight: bold;
+	font-size: 80%;
+	margin: 5px;
+	padding: 5px;
+	transition: all 0.1s ease;
+	-webkit-transition: all 0.1s ease;
+	-moz-transition: all 0.1s ease;
+	cursor: pointer;
+}
+
+.b09_electric:hover {
+	color: #ffffff;
+	background-color: #5f89e6;
+	animation: b09_electric_blinkIn 0.05s step-end 0.1;
+	-webkit-animation: b09_electric_blinkIn 0.05s step-end 0.1;
+	-moz-animation: b09_electric_blinkIn 0.05s step-end 0.1;
+	transition: all 0.05s ease 0.1s;
+	-webkit-transition: all 0.05s ease 0.1s;
+	-moz-transition: all 0.05s ease 0.1s;
+}
+
+
 
 
 </style>
@@ -494,14 +524,22 @@ label {
 			<div class="video_analyze_box">
 				<div class="video_box compare_box">
 					<div class="compare_button_box">
-						<button id="compare_video_btn">비교 영상 직접 선택</button>
+						<div class="back">
+							<div class="b09_electric" id = "compare_video_btn">비교 영상 직접 선택</div>
+						</div>
+
+
 						<input id="compare_input_video" class="input_video" type="file"
 							accept="video/mp4,video/mkv,video/x-m4,video/*">
-						<button class="modal_btn">샘플 영상 선택</button>
+
+						<div class="back">
+							<div class="b09_electric" id = "modal_btn">샘플 영상 선택</div>
+						</div>
 					</div>
 					<div class="compare_video_box">
 						<!-- <video class="video compare_video" src="./video/test4.mp4" controls></video> -->
-						<button class="compare_video_back">뒤로가기</button>
+						<span class="compare_video_back material-symbols-outlined"  style="color: #5f89e6; cursor: pointer; margin: 1%;">undo</span>
+
 						<!-- 비교 영상 Video 태그 부분 -->
 						<canvas class="compare_canvas"></canvas>
 
@@ -520,13 +558,18 @@ label {
 
 				<div class="video_box user_box">
 					<div class="user_button_box">
-						<button id="user_live_button">실시간</button>
-						<button id="user_video_btn">영상 선택</button>
+						<div class="back">
+							<div class="b09_electric" id = "user_live_button">실시간</div>
+						</div>
+						<div class="back">
+							<div class="b09_electric" id = "user_video_btn">영상 선택</div>
+						</div>
 						<input id="user_input_video" class="input_video" type="file"
 							accept="video/mp4,video/mkv,video/x-m4,video/*">
 					</div>
 					<div class="user_video_box">
-						<button class="user_video_back">뒤로가기</button>
+						<span class="user_video_back material-symbols-outlined"  style="color: #5f89e6; cursor: pointer; margin: 1%;">undo</span>
+
 						<!-- 사용자 영상 Video 태그 부분 -->
 
 						<canvas class="user_canvas"></canvas>
@@ -569,13 +612,16 @@ label {
 <%-- 비디오 옵션	--%>
 		<div class="video_option">
 			<div class ="video_action">
-				<div>
-					<label for="video_ratio">비율</label>
-					<input id="video_ratio" type="range" min="0.5" max="1.6" step="any">
+				<div class="back">
+					<div class="b09_electric" id = "analyze_btn">자세 비교</div>
 				</div>
-				<div><button id = "analyze_btn"> 자세 비교</button></div>
-				<div><button id = "analyzeCurrent_btn"> 현재 자세 측정</button></div>
-				<div><button id = "analyzeAll_btn"> 전체 자세 매칭</button></div>
+				<div class="back">
+					<div class="b09_electric" id = "analyzeCurrent_btn">현재 자세 측정</div>
+				</div>
+				<div class="back">
+					<div class="b09_electric" id = "analyzeAll_btn">전체 자세 매칭</div>
+				</div>
+
 				<div>
 					<label>
 						<input role="switch" type="checkbox" id="isCanvas" checked />
@@ -588,7 +634,18 @@ label {
 						<span>3D Grid</span>
 					</label>
 				</div>
-
+				<div>
+					<label>
+						<input role="switch" type="checkbox" id="isCorrect" checked />
+						<span>보정 표기</span>
+					</label>
+				</div>
+				<div>
+					<label>
+						<input role="switch" type="checkbox" id="isResult" checked />
+						<span>결과 표기</span>
+					</label>
+				</div>
 				<div>
 					<label>
 						<input role="switch" type="checkbox" disabled />
