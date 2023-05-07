@@ -10,6 +10,7 @@ const analyzeAll_btn = document.getElementById("analyzeAll_btn");
 const isCanvas = document.getElementById("isCanvas");
 const is3DGrid = document.getElementById("is3DGrid");
 const isResult = document.getElementById("isResult");
+const isCorrect = document.getElementById("isCorrect");
 
 const play_duration = document.querySelector('.play-bar');
 
@@ -352,7 +353,7 @@ function drawSkeleton(results, canvasCtx, grid, correctiveResult) {
         canvasCtx.save();
         canvasCtx.clearRect(0, 0, canvasCtx.canvas.width, canvasCtx.canvas.height);
 
-        if(correctiveResult && correctiveResult != -1  && correctiveResult.poseLandmarks.length != 0){
+        if(isCorrect.checked && correctiveResult && correctiveResult != -1  && correctiveResult.poseLandmarks.length != 0){
 
             for (let i = 0; i < correctiveResult.poseLandmarks.length; i++) {
                 if (i%2 == 0) {
@@ -394,7 +395,7 @@ function drawSkeleton(results, canvasCtx, grid, correctiveResult) {
         canvasCtx.restore();
 
     }
-    if(correctiveResult && correctiveResult != -1 && correctiveResult.poseWorldLandmarks.length != 0){
+    if(isCorrect.checked && correctiveResult && correctiveResult != -1 && correctiveResult.poseWorldLandmarks.length != 0){
 
         let armleg = [44,45,46,47,48,49 , 56,57,58,59,60,61];
         let temp = [];
