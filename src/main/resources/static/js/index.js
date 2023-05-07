@@ -40,7 +40,14 @@ const tempConnentions = [
     [23, 41], [41, 43],
     [24, 42], [42, 44],
 ]
-
+const tempLeftConnections = [
+    [0, 2], [2, 4],
+    [6, 8],[8, 10]
+];
+const tempRightConnections = [
+    [1, 3], [3, 5],
+    [7, 9],[9, 11]
+]
 
 
 
@@ -331,8 +338,8 @@ function createVideoElement(video_box, srcURL) {
  * @param grid - 3D 캔버스
  */
 function drawSkeleton(results, canvasCtx, grid, correctiveResult) {
-    console.log(results);
-    console.log(correctiveResult);
+    // console.log(results);
+    // console.log(correctiveResult);
     //document.querySelector(".result_box").innerHTML = getTimeStampCommand(show_video.currentTime);
     if (results.poseLandmarks && isCanvas.checked) {
         let leftKeyPoint = [];
@@ -352,6 +359,7 @@ function drawSkeleton(results, canvasCtx, grid, correctiveResult) {
 
             for (let i = 0; i < correctiveResult.poseLandmarks.length; i++) {
                 if (i%2 == 0) {
+
                     leftCorrectKeyPoint.push(correctiveResult.poseLandmarks[i]);
                 } else {
                     rightCorrectKeyPoint.push(correctiveResult.poseLandmarks[i]);
@@ -375,6 +383,12 @@ function drawSkeleton(results, canvasCtx, grid, correctiveResult) {
         });
         drawLandmarks(canvasCtx, rightCorrectKeyPoint, {
             color: '#FFFFFF', lineWidth: 2
+        });
+        drawConnectors(canvasCtx, correctiveResult.poseLandmarks, tempLeftConnections, {
+            color: '#59a337', lineWidth: 3
+        });
+        drawConnectors(canvasCtx, correctiveResult.poseLandmarks, tempRightConnections, {
+            color: '#00cccc', lineWidth: 3
         });
         drawConnectors(canvasCtx, results.poseLandmarks, leftConnections, {
             color: '#00FFFF', lineWidth: 3
