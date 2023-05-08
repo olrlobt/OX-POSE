@@ -1,4 +1,3 @@
-
 const user_input_video = document.getElementById("user_input_video");
 const user_video_btn = document.getElementById("user_video_btn");
 const user_live_button = document.getElementById("user_live_button");
@@ -15,7 +14,7 @@ const isCorrect = document.getElementById("isCorrect");
 const play_duration = document.querySelector('.play-bar');
 
 // keyPoint 구분
-const leftIndices = [1, 2, 3, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31 ];
+const leftIndices = [1, 2, 3, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31];
 const rightIndices = [4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32];
 const leftConnections = [
     [11, 13], [13, 15], [15, 21], [15, 17], [15, 19], [17, 19],
@@ -30,8 +29,8 @@ const centerConnections = [
 ];
 
 const tempIndices = [
-    35,36,37,38,
-    41,42,43,44
+    35, 36, 37, 38,
+    41, 42, 43, 44
 
 ];
 const tempConnentions = [
@@ -43,42 +42,42 @@ const tempConnentions = [
 ]
 const tempLeftConnections = [
     [0, 2], [2, 4],
-    [6, 8],[8, 10]
+    [6, 8], [8, 10]
 ];
 const tempRightConnections = [
     [1, 3], [3, 5],
-    [7, 9],[9, 11]
+    [7, 9], [9, 11]
 ]
 
 let camera;
 let correctResult = [];
 let compareResult = [];
 let userResult = [];
-let command= [];
-let playTime=0 ;
+let command = [];
+let playTime = 0;
 
-is3DGrid.addEventListener("click",function (){
-    if(this.checked){
+is3DGrid.addEventListener("click", function () {
+    if (this.checked) {
         document.getElementsByClassName("video_analyze_canvas")[0].style.display = "block";
-    }else {
+    } else {
         document.getElementsByClassName("video_analyze_canvas")[0].style.display = "none";
     }
 });
 
-isCanvas.addEventListener("click",function (){
-    if(this.checked){
+isCanvas.addEventListener("click", function () {
+    if (this.checked) {
         document.getElementsByClassName("compare_canvas")[0].style.display = "block";
         document.getElementsByClassName("user_canvas")[0].style.display = "block";
-    }else {
+    } else {
         document.getElementsByClassName("compare_canvas")[0].style.display = "none";
         document.getElementsByClassName("user_canvas")[0].style.display = "none";
     }
 });
 
-isResult.addEventListener("click",function (){
-    if(this.checked){
+isResult.addEventListener("click", function () {
+    if (this.checked) {
         document.getElementsByClassName("video_analyze_result")[0].style.display = "block";
-    }else {
+    } else {
         document.getElementsByClassName("video_analyze_result")[0].style.display = "none";
     }
 })
@@ -86,17 +85,17 @@ isResult.addEventListener("click",function (){
 
 // 영상 선택 버튼 이벤트
 compare_video_btn.addEventListener("click", () => {
-    comparePose.send({images:null});
+    comparePose.send({images: null});
     compare_input_video.click();
 });
 user_video_btn.addEventListener("click", () => {
-    userPose.send({images:null});
+    userPose.send({images: null});
     user_input_video.click();
 });
 
 // 파일 입력 이벤트
-user_input_video.addEventListener("change", () =>  Analyze("user",userPose));
-compare_input_video.addEventListener("change", () => Analyze("compare",comparePose));
+user_input_video.addEventListener("change", () => Analyze("user", userPose));
+compare_input_video.addEventListener("change", () => Analyze("compare", comparePose));
 
 /**
  * 비디오 분석 함수
@@ -113,16 +112,23 @@ async function Analyze(part, poseModel) {
     const landmarkContainer =
         document.getElementsByClassName(part + '_landmark_grid_container')[0];
     const grid = new LandmarkGrid(landmarkContainer, gridOption);
-    const loading = document.getElementsByClassName(part +'_loading')[0];
-    const loading_background = document.getElementsByClassName(part +'_loading_background')[0];
-    const play_bar = document.getElementsByClassName(part+"_play-bar")[0];
-
+    const loading = document.getElementsByClassName(part + '_loading')[0];
+    const loading_background = document.getElementsByClassName(part + '_loading_background')[0];
+    const play_bar = document.getElementsByClassName(part + "_play-bar")[0];
 
     const analyze_data = [];
 
-    show_video.onloadedmetadata = () =>{
-        if(show_video.duration > playTime){
+    show_video.onloadedmetadata = () => {
+        if (show_video.duration > playTime) {
             playTime = show_video.duration;
+
+            const minutes = Math.floor(playTime / 60); // 동영상의 총 분
+            const seconds = Math.floor(playTime % 60); // 동영상의 총 초
+            const displayMinutes = minutes > 9 ? minutes : '0' + minutes; // 두 자리 수로 표기하기 위해
+            const displaySeconds = seconds > 9 ? seconds : '0' + seconds; // 두 자리 수로 표기하기 위해
+            const displayDuration = `${displayMinutes}:${displaySeconds}`; // 00:00 형식으로 표기
+
+            document.getElementById("duration").innerHTML = displayDuration;
         }
     }
 
@@ -135,36 +141,35 @@ async function Analyze(part, poseModel) {
     button_box.style.display = "none";
 
     analyze_video.onloadeddata = () => {
-        canvasCtx.canvas.style.aspectRatio = analyze_video.videoWidth / analyze_video.videoHeight +"";
+        canvasCtx.canvas.style.aspectRatio = analyze_video.videoWidth / analyze_video.videoHeight + "";
         canvasCtx.canvas.width = analyze_video.videoWidth;
         canvasCtx.canvas.height = analyze_video.videoHeight;
         canvasCtx.canvas.style.width = "100%";
         poseModel.initialize().then(() => {
             analyze_video.pause();
-            requestAnalyze(analyze_video, canvasCtx, poseModel, loading,loading_background);
+            requestAnalyze(analyze_video, canvasCtx, poseModel, loading, loading_background);
         });
     };
-    show_video.addEventListener('play', () =>{
+    show_video.addEventListener('play', () => {
             const intervalID = setInterval(() => {
                 drawSkeleton(getTimeStampAnalyze(show_video.currentTime, part), canvasCtx, grid, getTimeStampCommand(show_video.currentTime, part));
 
             }, 100);
 
-            show_video.addEventListener('pause' ,function () {
+            show_video.addEventListener('pause', function () {
                 clearInterval(intervalID);
-            },{once : true});
-      }
+            }, {once: true});
+        }
     );
 
     show_video.addEventListener('seeking', () =>
-         drawSkeleton(getTimeStampAnalyze(show_video.currentTime, part), canvasCtx, grid)
+        drawSkeleton(getTimeStampAnalyze(show_video.currentTime, part), canvasCtx, grid)
     );
     show_video.addEventListener('timeupdate', () => {
             const percentage = (show_video.currentTime / playTime) * 100;
             const maxLeft = play_duration.offsetWidth - play_bar.offsetWidth;
             const clampedLeft = (percentage / 100) * maxLeft;
             play_bar.style.left = `${clampedLeft}px`;
-
         }
     );
 
@@ -187,20 +192,20 @@ async function Analyze(part, poseModel) {
 
         document.addEventListener('mouseup', () => {
             document.removeEventListener('mousemove', onMouseMove);
-        }, { once: true });
+        }, {once: true});
     });
 
 
     poseModel.onResults((results) => {
 
         const jsonData = {
-            poseLandmarks : results.poseLandmarks,
-            poseWorldLandmarks : results.poseWorldLandmarks,
-            timestamp: analyze_video.currentTime - 0.08,
+            poseLandmarks: results.poseLandmarks,
+            poseWorldLandmarks: results.poseWorldLandmarks,
+            timeStamp: analyze_video.currentTime - 0.08,
         };
         analyze_data.push(jsonData);
-        document.querySelector("." + part + "_loading").querySelector(".progress-bar__bar").style.transform = `translateX(${analyze_video.currentTime/(analyze_video.duration) *100}%)`;
-        document.querySelector("." + part + "_loading").querySelector(".progress-bar__bar").style.webkitTransform = `translateX(${analyze_video.currentTime/(analyze_video.duration) *100}%)`;
+        document.querySelector("." + part + "_loading").querySelector(".progress-bar__bar").style.transform = `translateX(${analyze_video.currentTime / (analyze_video.duration) * 100}%)`;
+        document.querySelector("." + part + "_loading").querySelector(".progress-bar__bar").style.webkitTransform = `translateX(${analyze_video.currentTime / (analyze_video.duration) * 100}%)`;
     });
 
 
@@ -242,13 +247,13 @@ async function Analyze(part, poseModel) {
         }
 
         function onTimeUpdate() {
-            poseModel.send({ image: videoElement });
+            poseModel.send({image: videoElement});
             requestAnimationFrame(() =>
                 requestAnalyze(videoElement, canvasCtx, poseModel, loading, loading_background)
             );
         }
 
-        videoElement.addEventListener('timeupdate', onTimeUpdate, { once: true });
+        videoElement.addEventListener('timeupdate', onTimeUpdate, {once: true});
     }
 
     /**
@@ -259,10 +264,6 @@ async function Analyze(part, poseModel) {
      */
     function saveAnalyzeData(part, video) {
 
-        const jsonData = JSON.stringify({
-            data : analyze_data,
-        });
-
         console.log(analyze_data);
         $.ajax({
             type: 'POST',
@@ -270,11 +271,11 @@ async function Analyze(part, poseModel) {
             contentType: 'application/json',
             processData: false,
             dataType: 'json',
-            data: jsonData,
+            data: JSON.stringify(analyze_data),
             success: function (data) {
-                if(part == "user"){
+                if (part == "user") {
                     userResult = data;
-                }else{
+                } else {
                     compareResult = data;
                 }
             }
@@ -353,10 +354,10 @@ function drawSkeleton(results, canvasCtx, grid, correctiveResult) {
         canvasCtx.save();
         canvasCtx.clearRect(0, 0, canvasCtx.canvas.width, canvasCtx.canvas.height);
 
-        if(isCorrect.checked && correctiveResult && correctiveResult != -1  && correctiveResult.poseLandmarks.length != 0){
+        if (isCorrect.checked && correctiveResult && correctiveResult != -1 && correctiveResult.poseLandmarks.length != 0) {
 
             for (let i = 0; i < correctiveResult.poseLandmarks.length; i++) {
-                if (i%2 == 0) {
+                if (i % 2 == 0) {
 
                     leftCorrectKeyPoint.push(correctiveResult.poseLandmarks[i]);
                 } else {
@@ -395,17 +396,18 @@ function drawSkeleton(results, canvasCtx, grid, correctiveResult) {
         canvasCtx.restore();
 
     }
-    if(isCorrect.checked && correctiveResult && correctiveResult != -1 && correctiveResult.poseWorldLandmarks.length != 0){
+    if (isCorrect.checked && correctiveResult && correctiveResult != -1 && correctiveResult.poseWorldLandmarks.length != 0) {
 
-        let armleg = [44,45,46,47,48,49 , 56,57,58,59,60,61];
+        let armleg = [44, 45, 46, 47, 48, 49, 56, 57, 58, 59, 60, 61];
         let temp = [];
 
-        for(let i = 0 ; i < correctiveResult.poseWorldLandmarks.length; i ++){
-            if(armleg.includes(i+33)){
-                temp.push({x : correctiveResult.poseWorldLandmarks[i].x + results.poseWorldLandmarks[i].x ,
-                    y : correctiveResult.poseWorldLandmarks[i].y + results.poseWorldLandmarks[i].y,
-                    z : correctiveResult.poseWorldLandmarks[i].z + results.poseWorldLandmarks[i].z,
-                    visibility : results.poseWorldLandmarks.visibility
+        for (let i = 0; i < correctiveResult.poseWorldLandmarks.length; i++) {
+            if (armleg.includes(i + 33)) {
+                temp.push({
+                    x: correctiveResult.poseWorldLandmarks[i].x + results.poseWorldLandmarks[i].x,
+                    y: correctiveResult.poseWorldLandmarks[i].y + results.poseWorldLandmarks[i].y,
+                    z: correctiveResult.poseWorldLandmarks[i].z + results.poseWorldLandmarks[i].z,
+                    visibility: results.poseWorldLandmarks.visibility
                 });
             }
         }
@@ -422,7 +424,7 @@ function drawSkeleton(results, canvasCtx, grid, correctiveResult) {
                 {list: tempIndices, color: 'LEFTCORRECTIVECONNECTIONS'},
             ]);
 
-    }else{
+    } else {
 
         if (results.poseWorldLandmarks && is3DGrid.checked) {
             grid.updateLandmarks(results.poseWorldLandmarks, [
@@ -435,7 +437,7 @@ function drawSkeleton(results, canvasCtx, grid, correctiveResult) {
                     {list: rightIndices, color: 'RIGHT'}
                 ]);
 
-        }else {
+        } else {
             grid.updateLandmarks([]);
         }
     }
@@ -457,20 +459,20 @@ function deleteVideo(show_video, analyze_video) {
 }
 
 // 현재 타임부터 ~ 끝까지 결과를 비교 요청
-analyze_btn.addEventListener("click", function (){
+analyze_btn.addEventListener("click", function () {
 
     const compareVideo = document.querySelector('.compare_video_box video');
     const userVideo = document.querySelector('.user_video_box video');
 
-    if(!compareVideo || !userVideo){
+    if (!compareVideo || !userVideo) {
         return;
     }
 
-    const compareStartFrame = getTimeStampAnalyze(compareVideo.currentTime,"compare").frame;
-    const userStartFrame = getTimeStampAnalyze(userVideo.currentTime,"user").frame;
+    const compareStartFrame = getTimeStampAnalyze(compareVideo.currentTime, "compare").frame;
+    const userStartFrame = getTimeStampAnalyze(userVideo.currentTime, "user").frame;
 
     let frameLength = compareResult.length - compareStartFrame;
-    if(compareResult.length - compareStartFrame > userResult.length - userStartFrame){
+    if (compareResult.length - compareStartFrame > userResult.length - userStartFrame) {
         frameLength = userResult.length - userStartFrame;
     }
 
@@ -478,11 +480,11 @@ analyze_btn.addEventListener("click", function (){
     const userData = userResult.slice(userStartFrame, userStartFrame + frameLength);
 
     fetch("requestComparePose", {
-        method : "POST",
+        method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
-        body : JSON.stringify([userData,compareData])
+        body: JSON.stringify([userData, compareData])
     }).then(response => response.json())
         .then(data => {
             command = data;
@@ -490,40 +492,39 @@ analyze_btn.addEventListener("click", function (){
 });
 
 
-
-analyzeCurrent_btn.addEventListener("click", function (){
+analyzeCurrent_btn.addEventListener("click", function () {
     console.log("현재 분석 버튼 클릭");
     const compareVideo = document.querySelector('.compare_video_box video');
     const userVideo = document.querySelector('.user_video_box video');
 
     const poseVOs = [];
-    poseVOs.push( getTimeStampAnalyze(compareVideo.currentTime , "compare"));
-    poseVOs.push( getTimeStampAnalyze(userVideo.currentTime, "user"));
+    poseVOs.push(getTimeStampAnalyze(compareVideo.currentTime, "compare"));
+    poseVOs.push(getTimeStampAnalyze(userVideo.currentTime, "user"));
 
     console.log(poseVOs);
 
     fetch("matchCurrentPose", {
-        method : "POST",
+        method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
-        body : JSON.stringify(poseVOs)
+        body: JSON.stringify(poseVOs)
     })
 })
 
 
-analyzeAll_btn.addEventListener("click", function (){
+analyzeAll_btn.addEventListener("click", function () {
     console.log("전체 분석 버튼 클릭");
     const poseVOs = [];
     poseVOs.push(compareResult);
     poseVOs.push(userResult);
 
     fetch("matchAllPose", {
-        method : "POST",
+        method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
-        body : JSON.stringify(poseVOs)
+        body: JSON.stringify(poseVOs)
     }).then(response => response.json())
         .then(data => {
             console.log(data);
@@ -535,8 +536,8 @@ analyzeAll_btn.addEventListener("click", function (){
 
             }
         }).catch(error => {
-            console.error(error);
-        });
+        console.error(error);
+    });
 })
 
 
@@ -545,17 +546,17 @@ analyzeAll_btn.addEventListener("click", function (){
  * @param timeStamp
  * @param part
  */
-function getTimeStampAnalyze(timeStamp, part){
+function getTimeStampAnalyze(timeStamp, part) {
     let result = [];
 
-    if(part === "user"){
+    if (part === "user") {
         result = userResult;
-    }else{
+    } else {
         result = compareResult;
     }
 
     let low = 0;
-    let high = result.length-1;
+    let high = result.length - 1;
 
     let closest = result[0].timeStamp;
 
@@ -582,14 +583,13 @@ function getTimeStampAnalyze(timeStamp, part){
 }
 
 
+function getTimeStampCommand(timeStamp, part) {
 
-function getTimeStampCommand(timeStamp, part){
-
-    if(part != "user"){
+    if (part != "user") {
         return -1;
     }
 
-    if(command){
+    if (command) {
         let start = 0;
         let end = command.length - 1;
         let result = -1;
@@ -630,8 +630,6 @@ function getTimeStampCommand(timeStamp, part){
 // 	user_video_box.style.display = "block";
 // 	user_button_box.style.display = "none";
 // });
-
-
 
 
 const userPose = new Pose({
@@ -678,18 +676,18 @@ const gridOption = {
     numCellsPerAxis: 2,
     showHidden: false,
     centered: true,
-    isRotating : false,
-    rotationSpeed : 0.5,
+    isRotating: false,
+    rotationSpeed: 0.5,
 }
 
 const playBtn = document.querySelector(".play_btn");
 
-playBtn.addEventListener("click",function (){
-    if(playBtn.innerHTML == "play_arrow"){
+playBtn.addEventListener("click", function () {
+    if (playBtn.innerHTML == "play_arrow") {
         playBtn.innerHTML = "pause";
         document.querySelector(".user_video_box video").play();
         document.querySelector(".compare_video_box video").play();
-    }else{
+    } else {
         playBtn.innerHTML = "play_arrow";
         document.querySelector(".user_video_box video").pause();
         document.querySelector(".compare_video_box video").pause();
