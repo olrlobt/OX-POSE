@@ -2,7 +2,6 @@ package com.combo.oxpose.mediapose;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -49,7 +48,7 @@ public class PoseController {
     @ResponseBody
     @PostMapping("/removeVideo")
     public void removeVideo(@RequestBody String src) {
-        log.info("anla src = {}", src);
+
         poseService.removeVideo(src);
     }
 
@@ -71,11 +70,9 @@ public class PoseController {
     @PostMapping("/requestComparePose")
     public List<CommandVO> requestComparePose(@RequestBody List<List<PoseVO>> poseVOs) {
 
-        List<PoseVO> data = poseService.requestComparePose(poseVOs);
 
-        poseService.requestCorrectivePoseLandmarks(poseVOs, data);
-        List<CommandVO> result = poseService.requestCommand(data);
-        return result;
+        List<PoseVO> compareCorrectPose = poseService.requestCorrectivePoseLandmarks(poseVOs);
+        return poseService.requestCommand(compareCorrectPose, poseVOs.get(0));
     }
 
 

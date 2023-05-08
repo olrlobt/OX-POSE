@@ -100,6 +100,7 @@ compare_input_video.addEventListener("change", () => Analyze("compare", compareP
 /**
  * 비디오 분석 함수
  * @param {string} part - user or compare
+ * @param poseModel
  */
 async function Analyze(part, poseModel) {
     const input_video = document.getElementById(part + "_input_video");
@@ -126,9 +127,8 @@ async function Analyze(part, poseModel) {
             const seconds = Math.floor(playTime % 60); // 동영상의 총 초
             const displayMinutes = minutes > 9 ? minutes : '0' + minutes; // 두 자리 수로 표기하기 위해
             const displaySeconds = seconds > 9 ? seconds : '0' + seconds; // 두 자리 수로 표기하기 위해
-            const displayDuration = `${displayMinutes}:${displaySeconds}`; // 00:00 형식으로 표기
 
-            document.getElementById("duration").innerHTML = displayDuration;
+            document.getElementById("duration").innerHTML = `${displayMinutes}:${displaySeconds}`;
         }
     }
 
@@ -183,9 +183,7 @@ async function Analyze(part, poseModel) {
             play_bar.style.left = `${clampedLeft}px`;
 
             const percentage = clampedLeft / maxLeft;
-            const currentTime = playTime * percentage;
-
-            show_video.currentTime = currentTime;
+            show_video.currentTime = playTime * percentage;
         }
 
         document.addEventListener('mousemove', onMouseMove);
@@ -258,7 +256,6 @@ async function Analyze(part, poseModel) {
 
     /**
      * 분석 결과를 저장하는 함수
-     * @param analyze_data
      * @param part
      * @param video
      */
@@ -273,7 +270,7 @@ async function Analyze(part, poseModel) {
             dataType: 'json',
             data: JSON.stringify(analyze_data),
             success: function (data) {
-                if (part == "user") {
+                if (part === "user") {
                     userResult = data;
                 } else {
                     compareResult = data;
@@ -306,8 +303,7 @@ async function setPlaybackRate(input_video) {
 
     try {
         const response = await fetch("changePlaybackRate", options);
-        const data = await response.text();
-        return data;
+        return await response.text();
     } catch (error) {
         console.error(error);
     }
@@ -334,8 +330,16 @@ function createVideoElement(video_box, srcURL) {
  * @param results - 분석 결과
  * @param canvasCtx - 2D 캔버스
  * @param grid - 3D 캔버스
+ * @param correctiveResult
  */
 function drawSkeleton(results, canvasCtx, grid, correctiveResult) {
+
+    console.log(correctiveResult);
+
+    if(correctiveResult && correctiveResult.command){
+
+        document.querySelector(".result_box").innerHTML = correctiveResult.command;
+    }
 
     if (results.poseLandmarks && isCanvas.checked) {
         let leftKeyPoint = [];
@@ -354,10 +358,10 @@ function drawSkeleton(results, canvasCtx, grid, correctiveResult) {
         canvasCtx.save();
         canvasCtx.clearRect(0, 0, canvasCtx.canvas.width, canvasCtx.canvas.height);
 
-        if (isCorrect.checked && correctiveResult && correctiveResult != -1 && correctiveResult.poseLandmarks.length != 0) {
+        if (isCorrect.checked && correctiveResult && correctiveResult !== -1 && correctiveResult.poseLandmarks.length !== 0) {
 
             for (let i = 0; i < correctiveResult.poseLandmarks.length; i++) {
-                if (i % 2 == 0) {
+                if (i % 2 === 0) {
 
                     leftCorrectKeyPoint.push(correctiveResult.poseLandmarks[i]);
                 } else {
@@ -396,23 +400,9 @@ function drawSkeleton(results, canvasCtx, grid, correctiveResult) {
         canvasCtx.restore();
 
     }
-    if (isCorrect.checked && correctiveResult && correctiveResult != -1 && correctiveResult.poseWorldLandmarks.length != 0) {
-
-        let armleg = [44, 45, 46, 47, 48, 49, 56, 57, 58, 59, 60, 61];
-        let temp = [];
-
-        for (let i = 0; i < correctiveResult.poseWorldLandmarks.length; i++) {
-            if (armleg.includes(i + 33)) {
-                temp.push({
-                    x: correctiveResult.poseWorldLandmarks[i].x + results.poseWorldLandmarks[i].x,
-                    y: correctiveResult.poseWorldLandmarks[i].y + results.poseWorldLandmarks[i].y,
-                    z: correctiveResult.poseWorldLandmarks[i].z + results.poseWorldLandmarks[i].z,
-                    visibility: results.poseWorldLandmarks.visibility
-                });
-            }
-        }
-
-        grid.updateLandmarks(results.poseWorldLandmarks.concat(temp), [
+    if (isCorrect.checked && correctiveResult && correctiveResult !== -1 && correctiveResult.poseWorldLandmarks.length !== 0) {
+        console.log(results.poseWorldLandmarks.concat(correctiveResult.poseWorldLandmarks));
+        grid.updateLandmarks(results.poseWorldLandmarks.concat(correctiveResult.poseWorldLandmarks), [
                 {list: leftConnections, color: 'LEFTCONNECTIONS'},
                 {list: rightConnections, color: 'RIGHTCONNECTIONS'},
                 {list: centerConnections, color: '0xEEEEEE'},
@@ -563,7 +553,7 @@ function getTimeStampAnalyze(timeStamp, part) {
     while (low < high) {
         let mid = Math.floor((low + high) / 2);
 
-        if (timeStamp == result[mid].timeStamp) {
+        if (timeStamp === result[mid].timeStamp) {
             closest = result[mid].timeStamp;
             break;
         }
@@ -585,7 +575,7 @@ function getTimeStampAnalyze(timeStamp, part) {
 
 function getTimeStampCommand(timeStamp, part) {
 
-    if (part != "user") {
+    if (part !== "user") {
         return -1;
     }
 
@@ -683,7 +673,7 @@ const gridOption = {
 const playBtn = document.querySelector(".play_btn");
 
 playBtn.addEventListener("click", function () {
-    if (playBtn.innerHTML == "play_arrow") {
+    if (playBtn.innerHTML === "play_arrow") {
         playBtn.innerHTML = "pause";
         document.querySelector(".user_video_box video").play();
         document.querySelector(".compare_video_box video").play();

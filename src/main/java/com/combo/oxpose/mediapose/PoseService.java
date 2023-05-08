@@ -71,9 +71,9 @@ public class PoseService {
                 midPoseVO.setTimeStamp(previousPoseVO.getTimeStamp()
                         + (curPoseVO.getTimeStamp() - previousPoseVO.getTimeStamp()) * count / 3);
                 midPoseVO.setPoseLandmarks(
-                        addMiddlePose(curPoseVO.getPoseLandmarks(), previousPoseVO.getPoseLandmarks(), count));
+                        getMiddlePose(curPoseVO.getPoseLandmarks(), previousPoseVO.getPoseLandmarks(), count));
                 midPoseVO.setPoseWorldLandmarks(
-                        addMiddlePose(curPoseVO.getPoseWorldLandmarks(), previousPoseVO.getPoseWorldLandmarks(),
+                        getMiddlePose(curPoseVO.getPoseWorldLandmarks(), previousPoseVO.getPoseWorldLandmarks(),
                                 count));
 
                 poseVOs.add(i, midPoseVO);
@@ -81,7 +81,14 @@ public class PoseService {
         }
     }
 
-    private ArrayList<PoseKeyPoint> addMiddlePose(ArrayList<PoseKeyPoint> curPoseKeyPoints,
+    /**
+     * 좌표의 사잇값을 반환하는 함수
+     * @param curPoseKeyPoints 2번 포즈
+     * @param previousPoseKeyPoint 1번 포즈
+     * @param count index
+     * @return
+     */
+    private ArrayList<PoseKeyPoint> getMiddlePose(ArrayList<PoseKeyPoint> curPoseKeyPoints,
                                                   ArrayList<PoseKeyPoint> previousPoseKeyPoint, int count) {
 
         ArrayList<PoseKeyPoint> midPoseLandmarks = new ArrayList<>();
@@ -109,8 +116,6 @@ public class PoseService {
     /**
      * 데이터를 신체 기준의 새로운 축을 기준으로 정규화하는 함수 좌어깨 : 11 / 우어깨 : 12 / 좌엉 : 23 / 우엉 : 24
      *
-     * @param poseKeyPoints
-     * @return
      */
     public double[][] normalizeData(ArrayList<PoseKeyPoint> poseKeyPoints) {
 
@@ -372,101 +377,68 @@ public class PoseService {
     }
 
     /**
-     * 가중치 자세가 기준치를 넘치 못하면, 자세의 차이를 저장하는 함수
-     *
-     * @param poseVOs poseVOs.get(0) : user , poseVOs.get(1) : compare
-     * @return 3D grid 차이
-     */
-    public List<PoseVO> requestComparePose(List<List<PoseVO>> poseVOs) {
-        List<PoseVO> userPoseData = poseVOs.get(0);
-        List<PoseVO> comparePoseData = poseVOs.get(1);
-        List<PoseVO> result = new ArrayList<>();
-
-        for (int i = 0; i < userPoseData.size(); i++) {
-            PoseVO userPose = userPoseData.get(i);
-            PoseVO comparePose = comparePoseData.get(i);
-            PoseVO resultPose = new PoseVO();
-            resultPose.setTimeStamp(comparePose.getTimeStamp());
-
-            ArrayList<PoseKeyPoint> resultWorldLandmarks = new ArrayList<>();
-
-            for (int j = 0; j < 33; j++) {
-                if (weightedDistanceMatching(userPose, comparePose) < 0.2) {
-                    break;
-                }
-
-                PoseKeyPoint userPoseKey = userPose.getPoseWorldLandmarks().get(j);
-                PoseKeyPoint comparePoseKey = comparePose.getPoseWorldLandmarks().get(j);
-
-                PoseKeyPoint resultPoseKey = new PoseKeyPoint();
-                resultPoseKey.setX(comparePoseKey.getX() - userPoseKey.getX());
-                resultPoseKey.setY(comparePoseKey.getY() - userPoseKey.getY());
-                resultPoseKey.setZ(comparePoseKey.getZ() - userPoseKey.getZ());
-                resultWorldLandmarks.add(resultPoseKey);
-            }
-            resultPose.setPoseWorldLandmarks(resultWorldLandmarks);
-            result.add(resultPose);
-        }
-        return result;
-    }
-
-
-    /**
      * data에 따라 코멘트를 추가하는 함수
      *
      * @return 3D grid에 따른 자세 차이 코멘트
      */
-    public List<CommandVO> requestCommand(List<PoseVO> data) {
+    public List<CommandVO> requestCommand(List<PoseVO> compareCorrectPose, List<PoseVO> userPoseVO) {
 
         List<CommandVO> commandVOS = new ArrayList<>();
 
-        for (PoseVO poseVO : data) {
+        for (int index = 0 ; index < compareCorrectPose.size(); index++) {
             CommandVO commandVO = new CommandVO();
-            commandVO.setTimeStamp(poseVO.getTimeStamp());
-            commandVO.setPoseWorldLandmarks(poseVO.getPoseWorldLandmarks());
-            commandVO.setPoseLandmarks(poseVO.getPoseLandmarks());
+            commandVO.setTimeStamp(compareCorrectPose.get(index).getTimeStamp());
+            commandVO.setPoseWorldLandmarks(compareCorrectPose.get(index).getPoseWorldLandmarks());
+            commandVO.setPoseLandmarks(compareCorrectPose.get(index).getPoseLandmarks());
+
             List<String> command = new ArrayList<>();
 
-            for (int index : armsAndLegs) {
+            for (int i = 0;  i <  compareCorrectPose.get(index).getPoseWorldLandmarks().size() ; i ++) {
+                PoseKeyPoint correctKeyPoint = compareCorrectPose.get(index).getPoseWorldLandmarks().get(i);
+                PoseKeyPoint userKeyPoint = userPoseVO.get(index).getPoseWorldLandmarks().get(i);
 
-                if (poseVO.getPoseWorldLandmarks().isEmpty()) {
-                    continue;
-                }
+                double XGap = correctKeyPoint.getX() - userKeyPoint.getX();
+                double YGap = correctKeyPoint.getY() - userKeyPoint.getY();
+                double ZGap = correctKeyPoint.getZ() - userKeyPoint.getZ();
 
-                PoseKeyPoint poseKeyPoint = poseVO.getPoseWorldLandmarks().get(index);
-                if (poseKeyPoint.getX() == 0) {
+
+                if (compareCorrectPose.get(index).getPoseWorldLandmarks().isEmpty() || correctKeyPoint.getX() == 0) {
                     continue;
                 }
 
                 StringBuilder sb = new StringBuilder();
-                double Max = Math.max(Math.max(Math.abs(poseKeyPoint.getX()), Math.abs(poseKeyPoint.getY())),
-                        Math.abs(poseKeyPoint.getZ()));
-                sb.append(KeyPointName.valueOf(index).getName()).append(" ");
 
-                if (Max == Math.abs(poseKeyPoint.getX())) {
-                    if (Math.abs(poseKeyPoint.getX()) > 0) {
-                        sb.append("왼쪽 ");
-                    } else {
-                        sb.append("오른쪽 ");
+                double Max = Math.max(Math.max(Math.abs(XGap), Math.abs(YGap)), Math.abs(ZGap));
+
+                if(Max > 0.4){
+                    log.info("Max = {}" , Max);
+                    sb.append(KeyPointName.correctValueOf(i).getName()).append(" ");
+                    if (Max == Math.abs(XGap)) {
+                        if (XGap > 0) {
+                            sb.append("왼쪽 ");
+                        } else {
+                            sb.append("오른쪽 ");
+                        }
                     }
+
+                    if (Max == Math.abs(YGap)) {
+                        if (YGap > 0) {
+                            sb.append("아래로 ");
+                        } else {
+                            sb.append("위로 ");
+                        }
+
+                    } else {
+                        if (ZGap > 0) {
+                            sb.append("앞으로 ");
+                        } else {
+                            sb.append("뒤로 ");
+                        }
+                    }
+
                 }
 
-                if (Max == Math.abs(poseKeyPoint.getY())) {
-                    if (Math.abs(poseKeyPoint.getY()) > 0) {
-                        sb.append("아래로 ");
-                    } else {
-                        sb.append("위로 ");
-                    }
-
-                } else {
-                    if (Math.abs(poseKeyPoint.getZ()) > 0) {
-                        sb.append("앞으로 ");
-                    } else {
-                        sb.append("뒤로 ");
-                    }
-                }
                 command.add(String.valueOf(sb));
-
             }
             commandVO.setCommand(command);
             commandVOS.add(commandVO);
@@ -476,12 +448,11 @@ public class PoseService {
     }
 
     /**
-     * 3D grid의 분석점 차이를 2D canvas 좌표로 변환하는 함수
+     * 3D와 2D의 분석점 차이를 12개의 점으로 반환
      *
-     * @param poseVOs
-     * @param data
+     * @return 팔 다리 12개의 3D점, 2D점
      */
-    public void requestCorrectivePoseLandmarks(List<List<PoseVO>> poseVOs, List<PoseVO> data) {
+    public List<PoseVO> requestCorrectivePoseLandmarks(List<List<PoseVO>> poseVOs) {
         List<PoseVO> userPoseData = poseVOs.get(0);
         List<PoseVO> comparePoseData = poseVOs.get(1);
 
@@ -503,23 +474,24 @@ public class PoseService {
             double ZWorldIncreased = worldLandmarks.get(11).getZ() - worldLandmarks.get(23).getZ();
             double ZIncreased = ZWorldIncreased / ZLandIncreased;
 
-            ArrayList<PoseKeyPoint> poseKeyPoints = new ArrayList<>();
-
-            for (int j : armsAndLegs) {
+            ArrayList<PoseKeyPoint> correctLandmarks = new ArrayList<>();
+            ArrayList<PoseKeyPoint> correctWorldLandmarks = new ArrayList<>();
+            for (int keypoint : armsAndLegs) {
 
                 PoseKeyPoint poseKeyPoint = new PoseKeyPoint();
-                double X13WorldGap = compareWorldLandmarks.get(j).getX() - worldLandmarks.get(11).getX();
-                double Y13WorldGap = compareWorldLandmarks.get(j).getY() - worldLandmarks.get(11).getY();
-                double Z13WorldGap = compareWorldLandmarks.get(j).getZ() - worldLandmarks.get(11).getZ();
+                double X13WorldGap = compareWorldLandmarks.get(keypoint).getX() - worldLandmarks.get(11).getX();
+                double Y13WorldGap = compareWorldLandmarks.get(keypoint).getY() - worldLandmarks.get(11).getY();
+                double Z13WorldGap = compareWorldLandmarks.get(keypoint).getZ() - worldLandmarks.get(11).getZ();
                 poseKeyPoint.setX(X13WorldGap / XIncreased + landmarks.get(11).getX());
                 poseKeyPoint.setY(Y13WorldGap / YIncreased + landmarks.get(11).getY());
                 poseKeyPoint.setZ(Z13WorldGap / ZIncreased + landmarks.get(11).getZ());
                 poseKeyPoint.setVisibility(0.9);
 
-                poseKeyPoints.add(poseKeyPoint);
+                correctLandmarks.add(poseKeyPoint);
+                correctWorldLandmarks.add(compareWorldLandmarks.get(keypoint));
             }
 
-            for (PoseKeyPoint keyPoint : poseKeyPoints) {
+            for (PoseKeyPoint keyPoint : correctLandmarks) {
                 double[] point = {keyPoint.getX(), keyPoint.getY(), keyPoint.getZ()};
                 double[] P = matrixMultiply(M, point);
 
@@ -528,16 +500,15 @@ public class PoseService {
                 keyPoint.setZ(P[2]);
             }
 
-            data.get(i).setPoseLandmarks(poseKeyPoints);
+            comparePoseData.get(i).setPoseLandmarks(correctLandmarks);
+            comparePoseData.get(i).setPoseWorldLandmarks(correctWorldLandmarks);
         }
+
+        return comparePoseData;
     }
 
     /**
      * 행렬 곱셈
-     *
-     * @param matrixA
-     * @param matrixB
-     * @return
      */
     public static double[] matrixMultiply(double[][] matrixA, double[] matrixB) {
         int rowsA = matrixA.length;

@@ -126,7 +126,10 @@ html, body {
 	top : 5px;
 	left: 5px;
 	z-index: 1;
-
+	text-shadow: -1px -1px 0 #FFFFFF,
+	1px -1px 0 #FFFFFF,
+	-1px 1px 0 #FFFFFF,
+	1px 1px 0 #FFFFFF;
 }
 
 
@@ -592,7 +595,7 @@ label {
 					<div class="compare_play-bar"></div>
 					<div class="user_play-bar"></div>
 				</div>
-				<div class="play-time">12:11 / 13:00</div>
+				<div class="play-time"><span id="currentTime"></span><span id="duration"></span></div>
 			</div>
 		<%--3D grid 출력 부분--%>
 			<div class="video_analyze_canvas">
