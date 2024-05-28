@@ -75,8 +75,10 @@ Google 머신러닝 솔루션 Mediapipe를 이용하여 두 비디오상의 인�
 
 - **LCSubstr([Longest Common Substring](https://www.geeksforgeeks.org/longest-common-substring-dp-29/))** 알고리즘을 이용하여 두 영상에서 가장 비슷한 자세를 찾아 이동한다.
 
-![전체자세](https://github.com/olrlobt/OX-POSE/assets/99643732/88c1074d-9425-489b-8988-a2feaac65e03)
+![전체자세 (1)](https://github.com/olrlobt/OX-POSE/assets/99643732/b91e5efa-d418-46a0-a81d-a842fa9a1d95)
 
+
+<br><br>
 
 ---
 
@@ -146,18 +148,11 @@ Google 머신러닝 솔루션 Mediapipe를 이용하여 두 비디오상의 인�
 
 ### 관련 포스팅
 
-[[Spring boot] 카카오 포즈 / RestTemplate으로 Kakao Pose API 호출하기](https://olrlobt.tistory.com/46)
-
-[[Pose Estimation] 다양한 Pose Estimation API 비교와 정리](https://olrlobt.tistory.com/49)
-
-[[Pose Estimation] MediaPipe Pose / 미디어 파이프로 사람 포즈 감지하기](https://olrlobt.tistory.com/50)
-
-[[Pose Estimation] YOLOv5, MediaPipe로 Multi Pose 구현 시도해보기](https://olrlobt.tistory.com/51)
-
-[[Spring boot] FFmpeg로 영상 배속 설정하기](https://olrlobt.tistory.com/53)
-
-[[Pose Estimation] Mediapipe Pose 분석 결과 3D grid로 렌더링하기](https://olrlobt.tistory.com/54)
-
-[[Pose Estimation] Mediapipe Pose 3D grid에 새로운 축을 적용하고, 새로운 축으로 좌표 변환하기](https://olrlobt.tistory.com/55)
-
-[[Pose Estimation] Mediapipe 2배속 분석과 분석 결과 중간 부족한 프레임 채우기](https://olrlobt.tistory.com/56)
+[![[Spring boot] 카카오 포즈 / RestTemplate으로 Kakao Pose API 호출하기](https://blogwidget.com/api/fix?theme=w&url=https://olrlobt.tistory.com/46)](https://olrlobt.tistory.com/46)
+[![[Pose Estimation] 다양한 Pose Estimation API 비교와 정리](https://blogwidget.com/api/fix?theme=w&url=https://olrlobt.tistory.com/49)](https://olrlobt.tistory.com/49)
+[![[Spring boot] 카카오 포즈 / RestTemplate으로 Kakao Pose API 호출하기](https://blogwidget.com/api/fix?theme=w&url=https://olrlobt.tistory.com/50)](https://olrlobt.tistory.com/50)
+[![[Pose Estimation] YOLOv5, MediaPipe로 Multi Pose 구현 시도해보기](https://blogwidget.com/api/fix?theme=w&url=https://olrlobt.tistory.com/51)](https://olrlobt.tistory.com/51)
+[![[Spring boot] FFmpeg로 영상 배속 설정하기](https://blogwidget.com/api/fix?theme=w&url=https://olrlobt.tistory.com/53)](https://olrlobt.tistory.com/53)
+[![[Pose Estimation] Mediapipe Pose 분석 결과 3D grid로 렌더링하기](https://blogwidget.com/api/fix?theme=w&url=https://olrlobt.tistory.com/54)](https://olrlobt.tistory.com/54)
+[![[Pose Estimation] Mediapipe Pose 3D grid에 새로운 축을 적용하고, 새로운 축으로 좌표 변환하기](https://blogwidget.com/api/fix?theme=w&url=https://olrlobt.tistory.com/55)](https://olrlobt.tistory.com/55)
+[![[Pose Estimation] Mediapipe 2배속 분석과 분석 결과 중간 부족한 프레임 채우기](https://blogwidget.com/api/fix?theme=w&url=https://olrlobt.tistory.com/56)](https://olrlobt.tistory.com/56)
